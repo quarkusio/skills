@@ -111,10 +111,24 @@ Define `quarkus.platform.version` as a Maven property. Do NOT hardcode the versi
 
 Rename Spring properties to Quarkus equivalents using config-map.md. Key mappings:
 
-- `spring.datasource.*` → `quarkus.datasource.*`
+- `spring.datasource.*` → `%prod.quarkus.datasource.*` (see below)
 - `spring.jpa.*` → `quarkus.hibernate-orm.*`
 - `server.port` → `quarkus.http.port`
 - `logging.level.*` → `quarkus.log.category."*".level`
+
+### Datasource properties and Dev Services
+
+When the project has no `application-{profile}.properties` files, prefix datasource connection properties with `%prod.` so they only apply in production. This lets Quarkus Dev Services automatically start a containerized database in dev and test modes — no local database setup needed.
+
+```properties
+
+# connection details only for prod
+%prod.quarkus.datasource.jdbc.url=jdbc:mysql://127.0.0.1:3306/todo
+%prod.quarkus.datasource.username=root
+%prod.quarkus.datasource.password=root
+```
+
+If `application-{profile}.properties` files exist, place production datasource config in `application-prod.properties` instead (no `%prod.` prefix needed there).
 
 ## Watch out
 

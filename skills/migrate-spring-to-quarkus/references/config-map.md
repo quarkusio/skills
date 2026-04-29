@@ -12,12 +12,16 @@
 
 ## Datasource
 
+Use the `%prod.` prefix on datasource properties so that Quarkus Dev Services can automatically provision a database in dev and test modes. Without the prefix, hardcoded connection values override Dev Services in all profiles.
+
+This applies when there are no separate `application-{profile}.properties` files. If profile-specific files exist, place the production datasource config in `application-prod.properties` instead.
+
 | Spring Boot | Quarkus |
 |---|---|
-| `spring.datasource.url` | `quarkus.datasource.jdbc.url` |
-| `spring.datasource.username` | `quarkus.datasource.username` |
-| `spring.datasource.password` | `quarkus.datasource.password` |
-| `spring.datasource.driver-class-name` | `quarkus.datasource.db-kind` (auto-detected) |
+| `spring.datasource.url` | `%prod.quarkus.datasource.jdbc.url` |
+| `spring.datasource.username` | `%prod.quarkus.datasource.username` |
+| `spring.datasource.password` | `%prod.quarkus.datasource.password` |
+| `spring.datasource.driver-class-name` | `quarkus.datasource.db-kind` (auto-detected, no `%prod.` needed) |
 
 ## JPA / Hibernate
 
