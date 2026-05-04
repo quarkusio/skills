@@ -13,13 +13,9 @@ Remove leftover Spring artifacts that survived the per-module migration: orphane
 
 ## Main class removal
 
-Quarkus auto-generates a main class — delete the `@SpringBootApplication` file. But first, check if it contains anything that needs migrating:
-
-- `@Bean` methods → move to an `@ApplicationScoped` class with `@Produces`
-- `CommandLineRunner` / `ApplicationRunner` → `void onStart(@Observes StartupEvent event)`
-- `@EnableScheduling`, `@EnableCaching`, etc. → not needed, Quarkus enables these via extensions
-
 If the main class was already removed during the code module, mark this as done.
+
+Otherwise, follow the instructions in the [code module — Main Class Removal](./code.md#main-class-removal).
 
 ## Leftover Spring imports
 

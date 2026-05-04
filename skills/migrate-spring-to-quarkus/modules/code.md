@@ -155,10 +155,14 @@ public class TodoResource {
 
 ## Main Class Removal
 
-Quarkus auto-generates a main class — delete the `@SpringBootApplication` file. But first, migrate anything it contains:
+If the main class **only** contains `SpringApplication.run(...)`, delete it — Quarkus auto-generates a main class.
+
+If it contains additional logic, migrate before deleting:
 
 - `@Bean` methods → move to an `@ApplicationScoped` class with `@Produces`
-- `CommandLineRunner` / `ApplicationRunner` → `void onStart(@Observes StartupEvent event)`
+- `CommandLineRunner` → `@QuarkusMain` with `QuarkusApplication`, or `@TopCommand` (Picocli) if it parses CLI arguments
+- `ApplicationRunner` → `@QuarkusMain` implementing `QuarkusApplication`
+- `@EnableScheduling`, `@EnableCaching`, etc. → not needed, Quarkus enables these via extensions
 
 ## Watch out
 

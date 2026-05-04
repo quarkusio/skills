@@ -1,6 +1,17 @@
 # Module: Build System
 
-Migrate the Maven build descriptor and configuration files from Spring Boot to Quarkus.
+Migrate the build descriptor and configuration files from Spring Boot to Quarkus.
+
+## Gate condition
+
+Detect the build tool by checking which files exist at the project root:
+
+| File | Build tool |
+|---|---|
+| `pom.xml` | Maven |
+| `build.gradle` or `build.gradle.kts` | Gradle |
+
+**This module currently supports Maven only.** If the project uses Gradle, inform the user that Gradle migration is not yet supported by this skill and **skip this module**.
 
 Load [references/dependency-map.md](../references/dependency-map.md) and [references/config-map.md](../references/config-map.md) before starting.
 

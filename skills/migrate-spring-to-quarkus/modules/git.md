@@ -12,15 +12,12 @@ git -C <project-path> rev-parse --is-inside-work-tree
 
 If this fails, **skip this module entirely** — inform the user that git management is not available because the project is not a git repository.
 
-## Agent Name
-
-The agent performing this migration is **Claude** by default. If this migration was run using a different tool (Copilot, Cursor, Junie, etc.), replace `Claude` with the appropriate name throughout this module.
-
 ## What to do
 
 ### Pre-migration (before executing modules)
 
 - [ ] Verify the project is a git repository
+- [ ] Ensure agent session files are excluded from version control
 - [ ] Determine the next run number from existing branches
 - [ ] Propose branch name to the user and wait for confirmation
 - [ ] Create the migration branch
@@ -30,6 +27,32 @@ The agent performing this migration is **Claude** by default. If this migration 
 - [ ] Write `migration-report.md` at the repo root
 - [ ] Show the user a summary of changes and ask for confirmation before committing
 - [ ] Ask the user for confirmation before pushing and creating the draft PR
+
+## Exclude agent session files
+
+Before any commit, ensure that agent session directories are listed in the project's `.gitignore`. These directories may contain sensitive data (tokens, credentials) logged during tool execution.
+
+Append the following entries to `.gitignore` if they are not already present:
+
+```
+# AI agent session/local files — may contain tokens and secrets
+.claude/
+.cursor/
+.codex/
+.opencode/
+.copilot/
+.cline/
+.continue/
+.windsurf/
+.junie/
+.pi/
+.roo/
+.augment/
+.aider*
+CLAUDE.local.md
+```
+
+This prevents session logs from being committed and pushed to the remote repository.
 
 ## Create the migration branch
 
