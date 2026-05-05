@@ -164,6 +164,129 @@ If it contains additional logic, migrate before deleting:
 - `ApplicationRunner` → `@QuarkusMain` implementing `QuarkusApplication`
 - `@EnableScheduling`, `@EnableCaching`, etc. → not needed, Quarkus enables these via extensions
 
+### @Bean methods
+
+```java
+// BEFORE: Spring — @Bean in main class
+@SpringBootApplication
+public class MyApp {
+    public static void main(String[] args) { SpringApplication.run(MyApp.class, args); }
+
+    @Bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper().registerModule(new JavaTimeModule());
+    }
+}
+
+// AFTER: Quarkus — @Produces in a dedicated class
+@ApplicationScoped
+public class AppConfig {
+    @Produces
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper().registerModule(new JavaTimeModule());
+    }
+}
+```
+
+### CommandLineRunner → @QuarkusMain
+
+Use `@QuarkusMain` when the runner executes startup logic without parsing CLI arguments.
+
+```java
+// BEFORE: Spring — CommandLineRunner
+@SpringBootApplication
+public class MyApp implements CommandLineRunner {
+    @Autowired DataLoader dataLoader;
+
+    public static void main(String[] args) { SpringApplication.run(MyApp.class, args); }
+
+    @Override
+    public void run(String... args) {
+        dataLoader.seed();
+    }
+}
+
+// AFTER: Quarkus — @QuarkusMain
+@QuarkusMain
+public class MyApp implements QuarkusApplication {
+    @Inject DataLoader dataLoader;
+
+    @Override
+    public int run(String... args) {
+        dataLoader.seed();
+        Quarkus.waitForExit();
+        return 0;
+    }
+}
+```
+
+### CommandLineRunner with CLI arguments → @TopCommand (Picocli)
+
+Use `@TopCommand` when the runner parses command-line arguments.
+
+```java
+// BEFORE: Spring — CommandLineRunner parsing args
+@SpringBootApplication
+public class MyCli implements CommandLineRunner {
+    public static void main(String[] args) { SpringApplication.run(MyCli.class, args); }
+
+    @Override
+    public void run(String... args) {
+        String file = args[0];
+        process(file);
+    }
+}
+
+// AFTER: Quarkus — Picocli @TopCommand
+@TopCommand
+@CommandLine.Command(name = "mycli", mixinStandardHelpOptions = true)
+public class MyCli implements Runnable {
+    @CommandLine.Parameters(index = "0", description = "File to process")
+    String file;
+
+    @Override
+    public void run() {
+        process(file);
+    }
+}
+// Requires: quarkus-picocli extension
+```
+
+### ApplicationRunner → @QuarkusMain
+
+```java
+// BEFORE: Spring — ApplicationRunner
+@SpringBootApplication
+public class MyApp implements ApplicationRunner {
+    @Autowired MigrationService migrations;
+
+    public static void main(String[] args) { SpringApplication.run(MyApp.class, args); }
+
+    @Override
+    public void run(ApplicationArguments args) {
+        if (args.containsOption("migrate")) {
+            migrations.execute();
+        }
+    }
+}
+
+// AFTER: Quarkus — @QuarkusMain
+@QuarkusMain
+public class MyApp implements QuarkusApplication {
+    @Inject MigrationService migrations;
+
+    @Override
+    public int run(String... args) {
+        List<String> argList = List.of(args);
+        if (argList.contains("--migrate")) {
+            migrations.execute();
+        }
+        Quarkus.waitForExit();
+        return 0;
+    }
+}
+```
+
 ## Watch out
 
 - **Missing `@Transactional`**: Quarkus uses `jakarta.transaction.Transactional`, not Spring's
