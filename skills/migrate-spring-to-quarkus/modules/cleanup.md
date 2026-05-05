@@ -6,10 +6,10 @@ Remove leftover Spring artifacts that survived the per-module migration: orphane
 
 - [ ] Remove the `@SpringBootApplication` main class (if still present)
 - [ ] Remove leftover Spring imports from all Java files
-- [ ] Remove unused Spring dependencies from `pom.xml`
+- [ ] Remove unused Spring dependencies from the build file (`pom.xml` or `build.gradle(.kts)`)
 - [ ] Remove stale Spring configuration properties
 - [ ] Remove orphaned Spring config files (`application-*.properties/yml` that have no Quarkus equivalent)
-- [ ] Compile: `mvn clean compile -DskipTests`
+- [ ] Compile: `mvn clean compile -DskipTests` (Maven) or `./gradlew clean compileJava -x test` (Gradle)
 
 ## Main class removal
 
@@ -28,11 +28,11 @@ grep -rn "import org.springframework" src/
 For each hit:
 - If the class has a Quarkus/Jakarta equivalent → replace the import (use annotation-map.md)
 - If it's an unused import → delete it
-- If it's still needed (Spring compat strategy) → leave it, but verify the corresponding `quarkus-spring-*` extension is in `pom.xml`
+- If it's still needed (Spring compat strategy) → leave it, but verify the corresponding `quarkus-spring-*` extension is in the build file
 
 ## Unused Spring dependencies
 
-Check `pom.xml` for Spring dependencies that are no longer referenced anywhere in the code:
+Check the build file (`pom.xml` or `build.gradle(.kts)`) for Spring dependencies that are no longer referenced anywhere in the code:
 
 - `spring-boot-devtools` → always remove (no Quarkus equivalent; use `quarkus:dev` instead)
 - `spring-boot-configuration-processor` → remove (Quarkus uses build-time config)

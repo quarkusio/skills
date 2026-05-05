@@ -71,3 +71,14 @@
 |---|---|
 | `spring-boot-maven-plugin` | `quarkus-maven-plugin` |
 | `spring-boot-gradle-plugin` | `io.quarkus` Gradle plugin |
+
+## Dependency Syntax by Build Tool
+
+Dependencies listed above use Maven artifact coordinates (`groupId:artifactId`). When working with Gradle build files, use the following mapping:
+
+| Maven | Gradle |
+|---|---|
+| `<dependency>` (default scope) | `implementation 'groupId:artifactId'` |
+| `<scope>test</scope>` | `testImplementation 'groupId:artifactId'` |
+| `<scope>runtime</scope>` | `runtimeOnly 'groupId:artifactId'` |
+| `<scope>provided</scope>` | `compileOnly 'groupId:artifactId'` |

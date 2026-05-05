@@ -12,7 +12,7 @@ Load [references/annotation-map.md](../references/annotation-map.md) — see the
 - [ ] Replace `@ActiveProfiles("test")` with `@TestProfile`
 - [ ] Replace `@LocalServerPort` with `@TestHTTPResource`
 - [ ] Update test properties (use `%test.` prefix in `application.properties`)
-- [ ] Run tests: `mvn test`
+- [ ] Run tests: `mvn test` (Maven) or `./gradlew test` (Gradle)
 
 ## Key Conversions
 
@@ -49,8 +49,9 @@ public class TodoResourceTest {
 
 ## Dependencies
 
-Ensure these are in `pom.xml` (should already be added by the build module):
+Ensure these are in the build file (should already be added by the build module):
 
+**Maven:**
 ```xml
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -67,6 +68,13 @@ Ensure these are in `pom.xml` (should already be added by the build module):
     <artifactId>quarkus-junit5-mockito</artifactId>
     <scope>test</scope>
 </dependency>
+```
+
+**Gradle:**
+```groovy
+testImplementation 'io.quarkus:quarkus-junit5'
+testImplementation 'io.rest-assured:rest-assured'
+testImplementation 'io.quarkus:quarkus-junit5-mockito'
 ```
 
 ## Watch out
