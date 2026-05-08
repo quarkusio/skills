@@ -124,7 +124,7 @@ Here are some examples that we currently use for local tests with Google Vertex 
 // Use gcloud auth login to use OAuth authentication and generate locally the application_default_credentials.json file
 export GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/application_default_credentials.json
 export VERTEX_LOCATION=europe-west1
-export GOOGLE_CLOUD_PROJECT=itpc-gcp-cp-pe-eng-claude
+export GOOGLE_CLOUD_PROJECT=your-project
 rm -rf target/runs
 
 // Dummy test to verify if the Agent works, is well configured
