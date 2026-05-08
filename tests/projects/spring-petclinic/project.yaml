@@ -1,0 +1,15 @@
+name: spring-petclinic
+description: Classic Spring PetClinic with Thymeleaf, Spring Data JPA, caching
+type: spring-boot
+skill: spring-boot-to-quarkus
+source: https://github.com/spring-projects/spring-petclinic
+ref: main
+timeout: 900
+
+checks:
+  - builds
+  - tests-pass
+  - no-spring-deps
+  - has-quarkus
+  - starts-up
+  - no-thymeleaf  # should be converted to Qute or alternative

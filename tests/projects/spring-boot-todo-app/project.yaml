@@ -1,0 +1,13 @@
+name: spring-boot-todo-app
+description: Spring Boot TODO application with database mysql
+type: spring-boot
+skill: migrate-spring-to-quarkus
+source: local
+timeout: 900
+
+checks:
+  - builds
+  - tests-pass
+  - no-spring-deps
+  - has-quarkus
+  - starts-up

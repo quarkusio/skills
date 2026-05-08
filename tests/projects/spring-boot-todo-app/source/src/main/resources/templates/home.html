@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>ToDo App</title>
+  <!-- Add Bootstrap CSS and JavaScript -->
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+    crossorigin="anonymous"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+
+<body style="background-color: rgb(244, 244, 244);">
+  <div class="container">
+    <!-- Modal -->
+    <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+      aria-labelledby="staticBackdropLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="staticBackdropLabel">Notification</h5>
+          </div>
+          <div class="modal-body">
+            <h4>Task has been successfully deleted</h4>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-success" data-bs-dismiss="modal"
+              onclick="location.reload()">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <h1 class="mt-4">Awesome To-Do App</h1>
+    <hr>
+    <!-- Task creation form -->
+    <div class="task-form mt-4">
+      <h2>Create a Task</h2>
+      <form th:action="@{/home}" method="post" th:object="${task}" id="taskForm">
+        <div class="form-group">
+          <input type="text" th:field="${task.title}" class="form-control" id="title" name="title"
+            placeholder="Task Title" required>
+        </div>
+        <div class="form-group">
+          <input class="form-control" th:field="${task.description}" id="description" name="description"
+            placeholder="Task Description" required></input>
+        </div>
+        <div class="form-group">
+          <input type="date" th:field="${task.dueDate}" class="form-control" id="dueDate" name="dueDate">
+        </div>
+        <button id="createTaskBtn" type="submit" class="btn btn-primary">Create Task</button>
+      </form>
+    </div>
+    <hr>
+
+    <!-- Task list as cards -->
+    <div class="task-list mt-4">
+      <h2>Task List</h2>
+      <div class="row task-container" th:unless="${noTasks == true}">
+        <!-- Thymeleaf iteration to create cards for each task -->
+        <div th:each="task : ${tasks}" class="col-md-4 mb-3">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title" th:text="${task.title}"></h5>
+              <hr>
+              <p class="card-text" th:text="${task.description}"></p>
+              <p class="card-text">
+                Due Date: <span th:text="${#temporals.format(task.dueDate, 'dd MMMM yyyy')}"></span>
+              </p>
+              <button class="btn btn-danger btn-delete" onclick="deleteTask(this)"
+                th:attr="data-task-id=${task.id}">Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row mt-4">
+        <div th:if="${noTasks == true}" class="col-md-12">
+          <div class="alert alert-info text-lg-center" role="info">
+            <em>No tasks created yet. You can create a task using the form above.</em>
+          </div>
+        </div>
+      </div>
+      <div th:if="${totalPages > 1}">
+        <nav aria-label="Page navigation">
+          <ul class="pagination justify-content-end">
+
+            <li class="page-item">
+              <a th:if="${currentPage != 1}" th:href="@{'/'}">First</a>
+              <span th:unless="${currentPage != 1}">First</span>
+            </li>
+
+            <li class="page-item col-sm-1">
+              <a th:if="${currentPage != 1}" th:href="@{'/home/' + ${currentPage - 1}}">Previous</a>
+              <span th:unless="${currentPage != 1}">Previous</span>
+            </li>
+
+            <span th:each="i: ${#numbers.sequence(1, totalPages)}">
+              <a th:if="${currentPage != i}" th:href="@{'/home/' + ${i}}">[[${i}]]</a>
+              <span th:unless="${currentPage != i}">[[${i}]]</span> &nbsp; &nbsp;
+            </span>
+
+            <li class="page-item col-sm-1">
+              <a th:if="${currentPage < totalPages}" th:href="@{'/home/' + ${currentPage + 1}}">Next</a>
+              <span th:unless="${currentPage < totalPages}">Next</span>
+            </li>
+
+            <li class="page-item">
+              <a th:if="${currentPage < totalPages}" th:href="@{'/home/' + ${totalPages}}">Last</a>
+              <span th:unless="${currentPage < totalPages}">Last</span>
+            </li>
+
+          </ul>
+        </nav>
+      </div>
+    </div>
+    <script async defer th:src="@{/js/home.js}"></script>
+    <script>
+
+      function deleteTask (button) {
+        // Get the task ID from the data-task-id attribute
+        const taskId = $(button).data('task-id');
+
+        // Send an AJAX DELETE request to delete the task
+        $.ajax({
+          type: 'DELETE',
+          url: '/home/' + taskId,
+          success: function () {
+            // Remove the card from the page on success
+            $(button).closest('.card').remove();
+            // Trigger the modal programmatically
+            $('#staticBackdrop').modal('show');
+          },
+          error: function (error) {
+            console.error('Error deleting task: ' + error.responseText);
+          }
+        });
+      }
+    </script>
+</body>
+
+</html>
