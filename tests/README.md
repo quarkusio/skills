@@ -1,6 +1,6 @@
 # Test Harness
 
-JUnit 5 test suite that runs migration skills against real Spring Boot / Jakarta EE projects, scores the results, and generates skill improvement reviews — all tracked over time.
+JUnit 5 test suite that runs migration skills against real projects, scores the results, and generates skill improvement reviews — all tracked over time.
 
 ## Prerequisites
 
