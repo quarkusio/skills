@@ -141,7 +141,7 @@ The following example uses the local project: `Spring Boot TODO` and the strateg
 ```bash
 export GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/application_default_credentials.json
 export VERTEX_LOCATION=europe-west1
-export GOOGLE_CLOUD_PROJECT=itpc-gcp-cp-pe-eng-claude
+export GOOGLE_CLOUD_PROJECT=your-project
 rm -rf target/runs
 
 mvn test \
