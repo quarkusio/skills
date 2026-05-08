@@ -149,7 +149,7 @@ mvn test \
     -Dai.strategy=compatibility \
     -Dai.provider=google-vertex-anthropic \
     -Dai.model=claude-opus-4-6@default \
-    -Dai.skill=https://github.com/aureamunoz/quarkus-skills/tree/add-new-migration-from-spring/skills/migrate-spring-to-quarkus \
+    -Dai.skill=migrate-spring-to-quarkus \
     -Dai.timeout=600
 ```
 > [!NOTE] You can remove the `-Dai.***` system properties having default values !
