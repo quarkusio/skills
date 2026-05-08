@@ -47,7 +47,7 @@ Scan the application to understand what needs to migrate:
 
 Present a summary table with area, findings, and complexity. Then ask the user to choose a strategy:
 
-- **Spring compat** (recommended): Use `quarkus-spring-web`, `quarkus-spring-data-jpa`, etc. Minimal code changes.
+- **Spring compatibility** (recommended): Use `quarkus-spring-web`, `quarkus-spring-data-jpa`, etc. Minimal code changes.
 - **Native Quarkus**: Replace all Spring annotations with JAX-RS/CDI. More work, full Quarkus experience.
 
 **Stop here and wait for the user's response before continuing.** Do not ask about git workflow or anything else in the same message.
