@@ -123,15 +123,18 @@ Here are some examples that we currently use for local tests with Google Vertex 
 ```shell
 // Use gcloud auth login to use OAuth authentication and generate locally the application_default_credentials.json file
 export GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/application_default_credentials.json
-export VERTEX_LOCATION=europe-west1
-export GOOGLE_CLOUD_PROJECT=your-project
+export VERTEX_LOCATION=your-google-cloud-location
+export GOOGLE_CLOUD_PROJECT=your-google-cloud-project-id
 rm -rf target/runs
 
 // Dummy test to verify if the Agent works, is well configured
 mvn test \
   -Dai.project=dummy \
-  -Dai.prompt="Say Hello." \
-  -Dai.skill=dummy
+  -Dai.skill=../tests/skills/dummy \
+  -Dai.prompt="Say Hello."
+  
+// or using project.yaml definition
+mvn test -Dai.project=dummy -Dai.prompt="Say Hello."  
 ```
 Verify if there is under the following path `/target/workdirs/dummy` a `HELLO.md created !
   
@@ -140,8 +143,8 @@ Verify if there is under the following path `/target/workdirs/dummy` a `HELLO.md
 The following example uses the local project: `Spring Boot TODO` and the strategy: `compatibility`
 ```bash
 export GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/application_default_credentials.json
-export VERTEX_LOCATION=europe-west1
-export GOOGLE_CLOUD_PROJECT=your-project
+export VERTEX_LOCATION=your-google-cloud-location
+export GOOGLE_CLOUD_PROJECT=your-google-cloud-project-id
 rm -rf target/runs
 
 mvn test \

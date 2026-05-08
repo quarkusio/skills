@@ -232,12 +232,6 @@ class MigrationTest {
         result.setReviewCost(usage.totalCost());
         result.setApiCalls(usage.apiCalls());
 
-        /*
-        System.out.println("  Tokens: " + usage.totalTokens() +
-                "  Cost: $" + String.format("%.4f", usage.totalCost()) +
-                "  API calls: " + usage.apiCalls());
-         */
-
         // 4. Run checks
         MigrationChecks checks = new MigrationChecks(workDir);
         System.out.println("  Running checks...");

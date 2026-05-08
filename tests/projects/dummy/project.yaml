@@ -1,6 +1,6 @@
 name: dummy
 description: dummy empty project
 type: dummy
-skill: dummy
+skill: ../tests/skills/dummy
 source: local
 timeout: 300
