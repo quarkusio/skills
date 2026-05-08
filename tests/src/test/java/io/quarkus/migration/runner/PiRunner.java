@@ -67,6 +67,80 @@ public class PiRunner extends AbstractRunner implements AgentRunner {
     }
 
     @Override
+    protected void printEvent(JsonNode event, BufferedWriter prettyWriter) {
+        String type = event.path("type").asText("");
+
+        switch (type) {
+            case "turn_start" -> printBoth("  ┌── turn", prettyWriter);
+
+            case "turn_end" -> printBoth("  └── turn end", prettyWriter);
+
+            case "message_start" -> {
+                String role = event.path("message").path("role").asText("");
+                if ("assistant".equals(role)) {
+                    printBoth("  │ 🤖 assistant:", prettyWriter);
+                }
+            }
+
+            case "message_end" -> {
+                JsonNode msg = event.path("message");
+                if ("assistant".equals(msg.path("role").asText(""))) {
+                    JsonNode usage = msg.path("usage");
+                    long tokens = usage.path("totalTokens").asLong(0);
+                    double cost = usage.path("cost").path("total").asDouble(0);
+                    if (tokens > 0) {
+                        printBoth(String.format("  │    [tokens: %d, cost: $%.4f]", tokens, cost), prettyWriter);
+                    }
+                }
+            }
+
+            case "message_update" -> {
+                JsonNode ae = event.path("assistantMessageEvent");
+                String aeType = ae.path("type").asText("");
+
+                switch (aeType) {
+                    case "text_delta" -> printBothRaw(ae.path("delta").asText(""), prettyWriter);
+                    case "text_end" -> printBoth("", prettyWriter);
+                    default -> {
+                    }
+                }
+            }
+
+            case "tool_execution_start" -> {
+                String toolName = event.path("toolName").asText("");
+                JsonNode args = event.path("args");
+
+                String line = switch (toolName) {
+                    case "bash" -> {
+                        String command = args.path("command").asText("");
+                        if (command.length() > 120)
+                            command = command.substring(0, 117) + "...";
+                        yield "  │ 🔧 bash: " + command;
+                    }
+                    case "edit" -> {
+                        String path = args.path("path").asText("");
+                        int edits = args.path("edits").size();
+                        yield "  │ 🔧 edit: " + path + " (" + edits + " edit" + (edits != 1 ? "s" : "") + ")";
+                    }
+                    case "write" -> "  │ 🔧 write: " + args.path("path").asText("");
+                    case "read" -> "  │ 🔧 read: " + args.path("path").asText("");
+                    default -> "  │ 🔧 " + toolName;
+                };
+                printBoth(line, prettyWriter);
+            }
+
+            case "tool_execution_end" -> {
+                JsonNode result = event.path("result");
+                if (result.path("isError").asBoolean(false)) {
+                    printBoth("  │ ❌ " + event.path("toolName").asText("") + " error", prettyWriter);
+                }
+            }
+
+            // Ignore: session, agent_start, thinking_*, etc.
+        }
+    }
+
+    @Override
     void addModelArgs(List<String> cmd) {
         boolean hasProvider = provider != null && !provider.isBlank();
         boolean hasModel = model != null && !model.isBlank();

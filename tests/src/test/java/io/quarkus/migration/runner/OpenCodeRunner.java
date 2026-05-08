@@ -149,6 +149,68 @@ public class OpenCodeRunner extends AbstractRunner implements AgentRunner {
     }
 
     @Override
+    protected void printEvent(JsonNode event, BufferedWriter prettyWriter) {
+        String type = event.path("type").asText("");
+
+        switch (type) {
+            case "step_start" -> printBoth("  ┌── step", prettyWriter);
+
+            case "step_finish" -> {
+                JsonNode part = event.path("part");
+                String reason = part.path("reason").asText("");
+                JsonNode tokens = part.path("tokens");
+                long totalTokens = tokens.path("total").asLong(0);
+                double cost = part.path("cost").asDouble(0);
+                String info = "  └── step end (" + reason + ")";
+                if (totalTokens > 0) {
+                    info += String.format("  [tokens: %d, cost: $%.4f]", totalTokens, cost);
+                }
+                printBoth(info, prettyWriter);
+            }
+
+            case "text" -> {
+                String text = event.path("part").path("text").asText("");
+                if (!text.isBlank()) {
+                    printBoth("  │ " + text, prettyWriter);
+                }
+            }
+
+            case "tool_use" -> {
+                JsonNode part = event.path("part");
+                String toolName = part.path("tool").asText("");
+                JsonNode state = part.path("state");
+                String status = state.path("status").asText("");
+                JsonNode input = state.path("input");
+                String title = state.path("title").asText("");
+
+                String line = switch (toolName) {
+                    case "bash" -> {
+                        String command = input.path("command").asText("");
+                        if (command.length() > 120)
+                            command = command.substring(0, 117) + "...";
+                        yield "  │ 🔧 bash: " + command;
+                    }
+                    case "edit" -> "  │ 🔧 edit: " + input.path("filePath").asText(title);
+                    case "write" -> "  │ 🔧 write: " + input.path("filePath").asText(title);
+                    case "read" -> "  │ 🔧 read: " + input.path("filePath").asText(title);
+                    case "glob" -> "  │ 🔧 glob: " + input.path("pattern").asText("");
+                    case "grep" -> "  │ 🔧 grep: " + input.path("pattern").asText("");
+                    case "skill" -> "  │ 🔧 skill: " + input.path("name").asText("");
+                    default -> "  │ 🔧 " + toolName + (!title.isEmpty() ? ": " + title : "");
+                };
+
+                if ("error".equals(status)) {
+                    line = "  │ ❌ " + toolName + " error";
+                }
+
+                printBoth(line, prettyWriter);
+            }
+
+            // Ignore other event types
+        }
+    }
+
+    @Override
     public AgentRunner.UsageStats extractUsage(List<String> sessionFiles) {
         if (sessionFiles == null) {
             return new AgentRunner.UsageStats(0, 0.0, 0, "unknown");
