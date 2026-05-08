@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *   <li>{@code ai.model} — model to use (default: vertex-anthropic/claude-sonnet-4-5@20250929)</li>
  *   <li>{@code ai.strategy} — migration strategy: full or compatibility (default: full)</li>
  *   <li>{@code ai.timeout} — timeout in seconds per project (default: 300)</li>
- *   <li>{@code ai.cmd} — path to pi binary (default: opencode)</li>
+ *   <li>{@code ai.cmd} — path to AI agent binary (default: opencode)</li>
  *   <li>{@code ai.project} — run only this project (default: all)</li>
  * </ul>
  *
@@ -67,7 +67,7 @@ class MigrationTest {
         if (!p.isEmpty() && !m.isEmpty()) return p + "/" + m;
         if (!p.isEmpty()) return p + "/(default)";
         if (!m.isEmpty()) return m;
-        return "(pi default)";
+        return "(ai agent default)";
     }
 
     static String aiStrategy() {
@@ -243,15 +243,16 @@ class MigrationTest {
         System.out.println("  Running checks...");
 
         List<String> failures = new ArrayList<>();
-        for (String check : config.checks()) {
-            System.out.print("    " + check + " ... ");
-            boolean passed = checks.runCheck(check);
-            result.addCheck(check, passed);
-            System.out.println(passed ? "✅" : "❌");
-            if (!passed) {
-                failures.add(check);
-            }
-        }
+        Optional.ofNullable(config.checks())
+                .ifPresent(list -> list.forEach(check -> {
+                    System.out.print("    " + check + " ... ");
+                    boolean passed = checks.runCheck(check);
+                    result.addCheck(check, passed);
+                    System.out.println(passed ? "✅" : "❌");
+                    if (!passed) {
+                        failures.add(check);
+                    }
+                }));
 
 
         /* TODO: To be reviewed and investigated: Do we need it ?

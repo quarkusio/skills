@@ -118,26 +118,30 @@ Remote clones are cached in `target/skills/` (or within the AI agent recommended
 
 Here are some examples that we currently use for local tests with Google Vertex AI combining the system propserties and envirionment variables
 
+1. Dummy project
+
 ```shell
 // Use gcloud auth login to use OAuth authentication and generate locally the application_default_credentials.json file
-set -x GOOGLE_APPLICATION_CREDENTIALS ~/.config/gcloud/application_default_credentials.json
-set -x VERTEX_LOCATION europe-west1
-set -x GOOGLE_CLOUD_PROJECT itpc-gcp-cp-pe-eng-claude
+export GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/application_default_credentials.json
+export VERTEX_LOCATION=europe-west1
+export GOOGLE_CLOUD_PROJECT=itpc-gcp-cp-pe-eng-claude
 rm -rf target/runs
 
-// Dummy test to verify if the Agent works
+// Dummy test to verify if the Agent works, is well configured
 mvn test \
-    -Dai.cmd=opencode \
-    -Dai.project=spring-rest-api \
-    -Dai.provider=google-vertex-anthropic \
-    -Dai.model=claude-opus-4-6@default \
-    -Dai.prompt="Say HelloWorld in French, English and Spanish. Create a TRANSLATED.md file." \
-    -Dai.timeout=120
-    
-// Spring Boot TODO migration using compatibility layer
-set -x GOOGLE_APPLICATION_CREDENTIALS ~/.config/gcloud/application_default_credentials.json
-set -x VERTEX_LOCATION europe-west1
-set -x GOOGLE_CLOUD_PROJECT itpc-gcp-cp-pe-eng-claude
+  -Dai.project=dummy \
+  -Dai.prompt="Say Hello." \
+  -Dai.skill=dummy
+```
+Verify if there is under the following path `/target/workdirs/dummy` a `HELLO.md created !
+  
+2. Spring Boot TODO
+
+The following example uses the local project: `Spring Boot TODO` and the strategy: `compatibility`
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/application_default_credentials.json
+export VERTEX_LOCATION=europe-west1
+export GOOGLE_CLOUD_PROJECT=itpc-gcp-cp-pe-eng-claude
 rm -rf target/runs
 
 mvn test \
@@ -146,7 +150,7 @@ mvn test \
     -Dai.provider=google-vertex-anthropic \
     -Dai.model=claude-opus-4-6@default \
     -Dai.skill=https://github.com/quarkusio/quarkus-skills/tree/main/migrate-spring-to-quarkus \
-    -Dai.timeout=600 \
+    -Dai.timeout=600
 ```
 > [!NOTE] You can remove the `-Dai.***` system properties having default values !
 
@@ -218,10 +222,11 @@ pi --session target/runs/spring-rest-api_claude-sonnet-4-5-20250514_full.session
 
 ### In-Repo (self-contained, no external dependencies)
 
-| Project | Description | Complexity | Checks |
-|---------|-------------|-----------|--------|
-| `spring-rest-api` | REST controller + service + validation, no DB | Trivial | builds, tests-pass, no-spring-deps, has-quarkus, starts-up |
-| `spring-jpa-crud` | CRUD with JPA, H2, Spring Data, custom queries | Low | builds, tests-pass, no-spring-deps, has-quarkus, starts-up |
+| Project                | Description                                                                                             | Complexity | Checks |
+|------------------------|---------------------------------------------------------------------------------------------------------|------------|--------|
+| `spring-rest-api`      | REST controller + service + validation, no DB                                                           | Trivial    | builds, tests-pass, no-spring-deps, has-quarkus, starts-up |
+| `spring-jpa-crud`      | CRUD with JPA, H2, Spring Data, custom queries                                                          | Low        | builds, tests-pass, no-spring-deps, has-quarkus, starts-up |
+| `spring-boot-todo-app` | TODO application designed using REST Controller + Thymeleaf Web + Data REST and JPA, MySQL, Spring Data | Middle     | builds, tests-pass, no-spring-deps, has-quarkus, starts-up |
 
 ### External (cloned at runtime)
 
@@ -278,7 +283,7 @@ Generate a dashboard from all recorded runs:
 
 ```bash
 # Generate report from default location
-./report.sh
+./scripts/report.sh
 
 # Opens at target/runs/report.html
 open target/runs/report.html

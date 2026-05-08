@@ -24,7 +24,7 @@
         <ai.model></ai.model>
         <ai.strategy>full</ai.strategy>
         <ai.timeout>300</ai.timeout>
-        <ai.cmd>pi</ai.cmd>
+        <ai.cmd>opencode</ai.cmd>
         <ai.skill></ai.skill>
         <ai.skill.branch></ai.skill.branch>
     </properties>

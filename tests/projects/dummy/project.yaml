@@ -1,0 +1,6 @@
+name: dummy
+description: dummy empty project
+type: dummy
+skill: dummy
+source: local
+timeout: 300
