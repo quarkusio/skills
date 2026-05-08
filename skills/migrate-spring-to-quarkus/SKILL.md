@@ -138,7 +138,7 @@ Present the review as a structured report:
 
 ### Summary
 - Strategy: [Full Migration / Spring Compatibility]
-- Agent: Claude
+- Agent: [AI agent name - e.g claude, pi, opencode, gemini, etc]
 - Model: [model name — e.g. claude-sonnet-4-6, check system context]
 - Modules completed: [X/4]
 - Checks passed: [X/6]
