@@ -77,6 +77,24 @@ Where `XX` is the next sequential number (zero-padded to two digits). If no prio
 
 ## Commit
 
+### Pre-commit: check for secrets
+
+Before staging files, scan the working directory for accidentally exposed secrets. Search for patterns like:
+
+- Hardcoded tokens or API keys (e.g., `ghp_`, `ghs_`, `sk-`, `Bearer`, `AKIA`)
+- Password or credential values in plain text
+- Private keys (`-----BEGIN.*PRIVATE KEY-----`)
+- `.env` files or agent session logs that slipped past `.gitignore`
+
+```bash
+grep -rn --include='*.java' --include='*.properties' --include='*.yml' --include='*.md' --include='*.json' \
+  -E '(ghp_|ghs_|sk-|AKIA|Bearer [A-Za-z0-9]|password\s*=\s*[^\$]|BEGIN.*PRIVATE KEY)' .
+```
+
+If any matches are found, flag them to the user before proceeding. Do **not** commit files containing secrets.
+
+### Stage and commit
+
 After migration and verification are complete, show the user a summary of staged changes and ask for confirmation:
 
 > Migration complete. Ready to commit all changes (including `migration-report.md`) with message:

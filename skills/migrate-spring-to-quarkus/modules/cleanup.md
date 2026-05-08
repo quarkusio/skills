@@ -9,7 +9,7 @@ Remove leftover Spring artifacts that survived the per-module migration: orphane
 - [ ] Remove unused Spring dependencies from the build file (`pom.xml` or `build.gradle(.kts)`)
 - [ ] Remove stale Spring configuration properties
 - [ ] Remove orphaned Spring config files (`application-*.properties/yml` that have no Quarkus equivalent)
-- [ ] Compile: `mvn clean compile -DskipTests` (Maven) or `./gradlew clean compileJava -x test` (Gradle)
+- [ ] Compile: `./mvnw clean compile -DskipTests` (Maven) or `./gradlew clean compileJava -x test` (Gradle)
 
 ## Main class removal
 

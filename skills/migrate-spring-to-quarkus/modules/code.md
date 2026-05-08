@@ -14,7 +14,7 @@ Load [references/annotation-map.md](../references/annotation-map.md) before star
 - [ ] Migrate `Model.addAttribute()` → Qute `Template.data()` or `@CheckedTemplate`
 - [ ] Migrate `return "redirect:..."` → `Response.seeOther()`
 - [ ] Remove `@SpringBootApplication` main class
-- [ ] Compile: `mvn clean compile -DskipTests` (Maven) or `./gradlew clean compileJava -x test` (Gradle)
+- [ ] Compile: `./mvnw clean compile -DskipTests` (Maven) or `./gradlew clean compileJava -x test` (Gradle)
 
 Use the annotation-map.md reference for the full mapping. Below are the key patterns with before/after examples.
 

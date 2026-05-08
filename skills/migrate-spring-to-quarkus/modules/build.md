@@ -43,4 +43,4 @@ If `application-{profile}.properties` files exist, place production datasource c
 - **Profile handling**: Spring's `application-{profile}.properties` → Quarkus `%profile.` prefix in a single `application.properties`
 - **Naming strategy mismatch**: Spring Boot defaults to snake_case (`firstName` → `first_name`). Quarkus/Hibernate 6 preserves camelCase. Set `quarkus.hibernate-orm.physical-naming-strategy=org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy`. **Also update `import.sql`/`data.sql` column names**.
 - **`quarkus-spring-boot-properties`** (Spring compat only): `@ConstructorBinding` NOT supported (needs no-arg constructor + setters). `Map<K,V>` types NOT supported.
-- **Gradle wrapper**: If the project has `gradlew`/`gradlew.bat`, always use `./gradlew` instead of a system-installed `gradle` command. Same principle as `mvnw` for Maven.
+- **Build tool wrapper**: If the project has `mvnw`/`gradlew`, always use `./mvnw` or `./gradlew` instead of the system-installed `mvn` or `gradle` command. This ensures reproducible builds with the exact tool version the project expects.

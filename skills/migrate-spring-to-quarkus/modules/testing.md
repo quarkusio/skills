@@ -12,7 +12,7 @@ Load [references/annotation-map.md](../references/annotation-map.md) — see the
 - [ ] Replace `@ActiveProfiles("test")` with `@TestProfile`
 - [ ] Replace `@LocalServerPort` with `@TestHTTPResource`
 - [ ] Update test properties (use `%test.` prefix in `application.properties`)
-- [ ] Run tests: `mvn test` (Maven) or `./gradlew test` (Gradle)
+- [ ] Run tests: `./mvnw test` (Maven) or `./gradlew test` (Gradle)
 
 ## Key Conversions
 

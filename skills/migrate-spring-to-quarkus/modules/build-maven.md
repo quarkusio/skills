@@ -10,7 +10,7 @@ Maven-specific build migration steps. Called from [build.md](build.md).
 - [ ] Add `native` profile
 - [ ] Replace Spring starters with Quarkus equivalents (use dependency-map.md)
 - [ ] Remove unused Spring-only dependencies (`spring-boot-devtools`, etc.)
-- [ ] Compile: `mvn clean compile -DskipTests`
+- [ ] Compile: `./mvnw clean compile -DskipTests`
 
 ## pom.xml Reference Snippets
 

@@ -1,12 +1,3 @@
----
-name: jdk
-description: Checks the JDK installed and selected before starting the migration. Warns the user and stops if the requirement is not met.
-license: Apache-2.0
-metadata:
-  author: Quarkus Team - https://github.com/quarkusio/quarkus
-  version: "0.1.0"
----
-
 # Phase 0: Check JDK Version
 
 Verify that the installed JDK meets the version requirement using the user's prompt VERSION before proceeding with the migration.

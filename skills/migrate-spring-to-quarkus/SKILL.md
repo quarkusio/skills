@@ -6,8 +6,7 @@ description: Migrates Spring Boot applications to Quarkus using a modular, gate-
   "quarkus migration", "replace spring", or asks about migrating "pom.xml", "build.gradle", "Spring MVC", "Spring Data JPA", "Thymeleaf", "@SpringBootApplication".
 license: Apache-2.0
 metadata:
-  author: Quarkus Team - https://github.com/quarkusio/quarkus
-  version: "0.1.0"
+  author: Quarkus Community - https://github.com/quarkusio/quarkus
 ---
 
 # Spring Boot to Quarkus Migration
@@ -21,7 +20,7 @@ Modular, gate-driven migration of Spring Boot applications to Quarkus.
     - Spring-specific patterns without a clear Quarkus equivalent
     - Configuration or wiring code whose purpose is unclear
       If you must remove code (e.g., a Spring-only base class), document what was removed and why in a `// REMOVED:` comment at the same location.
-- **Don't break the build.** Run the compile command after each phase (`mvn clean compile -DskipTests` for Maven, `./gradlew clean compileJava -x test` for Gradle). Never move to the next phase with a broken build.
+- **Don't break the build.** Run the compile command after each phase (`./mvnw clean compile -DskipTests` for Maven, `./gradlew clean compileJava -x test` for Gradle). Never move to the next phase with a broken build.
 - **Document every decision.** When choosing between migration approaches, explain the trade-off to the user.
 - **No silent changes.** Every file modification must be intentional and traceable. If a check fails after a phase, diagnose and fix — don't skip the check or delete the failing code.
 
@@ -91,7 +90,7 @@ FOR module IN [build, code, frontend, testing, cleanup]:
      IF gate == SKIP   → log "Module {name}: SKIPPED — {reason}", mark checkbox, continue
   3. LOAD — read the module file and relevant reference files
   4. EXECUTE — follow the module instructions, adapting to the chosen strategy
-  5. COMPILE — run the project's compile command (`mvn clean compile -DskipTests` for Maven, `./gradlew clean compileJava -x test` for Gradle)
+  5. COMPILE — run the project's compile command (`./mvnw clean compile -DskipTests` for Maven, `./gradlew clean compileJava -x test` for Gradle)
      Fails → diagnose and fix before proceeding
   6. LOG — mark checkbox as done
 ```
@@ -112,11 +111,11 @@ Run each check in order. A check fails = stop and fix before continuing.
 
 | # | Check | Command (Maven / Gradle) | Pass criteria |
 |---|-------|---------|---------------|
-| 1 | **Builds** | `mvn clean package -DskipTests` / `./gradlew clean build -x test` | Exit code 0, no compilation errors |
+| 1 | **Builds** | `./mvnw clean package -DskipTests` / `./gradlew clean build -x test` | Exit code 0, no compilation errors |
 | 2 | **No Spring deps** | Search build file for `org.springframework` | Zero Spring deps (except Spring compat extensions if using that strategy) |
 | 3 | **Has Quarkus** | Search build file for `io.quarkus` | Quarkus BOM and at least one extension present |
-| 4 | **Tests pass** | `mvn test` / `./gradlew test` | All tests pass using `@QuarkusTest` |
-| 5 | **Starts up** | `mvn quarkus:dev` / `./gradlew quarkusDev` | App starts, `curl http://localhost:8080/q/health` returns UP |
+| 4 | **Tests pass** | `./mvnw test` / `./gradlew test` | All tests pass using `@QuarkusTest` |
+| 5 | **Starts up** | `./mvnw quarkus:dev` / `./gradlew quarkusDev` | App starts, `curl http://localhost:8080/q/health` returns UP |
 | 6 | **No leftover templates** | Search for Thymeleaf/JSP references | None remaining (unless intentionally kept) |
 
 ## Step 5: Migration Review (Self-Reflection)

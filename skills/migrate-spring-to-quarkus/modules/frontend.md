@@ -9,7 +9,7 @@ Migrate templates, static assets, and view-related code from Spring MVC + Thymel
 - [ ] Move static resources from `static/` to `META-INF/resources/`
 - [ ] Remove Spring CSRF tokens from HTML and JavaScript
 - [ ] Rename template directories to match `@CheckedTemplate` class names
-- [ ] Compile: `mvn clean compile -DskipTests` (Maven) or `./gradlew clean compileJava -x test` (Gradle)
+- [ ] Compile: `./mvnw clean compile -DskipTests` (Maven) or `./gradlew clean compileJava -x test` (Gradle)
 
 ## Dependency
 
