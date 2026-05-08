@@ -168,41 +168,45 @@ Future iterations of this project will propose some improvements and new steps s
 
 ## Test Output
 
-During the run, you'll see live-streamed output:
+During a migration run, you'll see live-streamed output. The stream uses the AI agent json messages and shows
+the messages, the tool executed, tokens and cost.
 
 ```
-┌── turn
-│ 🤖 assistant:
-I'll migrate this Spring Boot project to Quarkus...
-│    [tokens: 5000, cost: $0.0150]
-│ 🔧 read: pom.xml
-│ 🔧 edit: pom.xml (4 edits)
-│ 🔧 bash: ./mvnw compile
-└── turn end
+  ┌── step
+  │ 
+I'll start by loading the migration skill and exploring the project structure.
+  │ 🔧 skill: migrate-spring-to-quarkus
+  └── step end (tool-calls)  [tokens: 13511, cost: $0.0858]
+  ┌── step
+  │ Now let me analyze the project structure and load the reference files I'll need:
+  │ 🔧 read: /Users/cmoullia/code/quarkus/rewrite-mtool/fork-quarkus-skills/tests/.opencode/skills/references/dependency-map.md
+  │ 🔧 read: /Users/cmoullia/code/quarkus/rewrite-mtool/fork-quarkus-skills/tests/.opencode/skills/references/annotation-map.md
+  │ 🔧 read: /Users/cmoullia/code/quarkus/rewrite-mtool/fork-quarkus-skills/tests/.opencode/skills/references/config-map.md
+  │ 🔧 task: Explore Spring Boot project
+  └── step end (tool-calls)  [tokens: 17154, cost: $0.0390]
 ```
 
 ## Run Artifacts
 
-Artifacts are stored in two locations:
+Each run generates artifacts which are stored in two locations:
 
-**`target/runs/`** — run logs and reviews, named `<project>_<model>_<strategy>.*`:
+**`target/runs/`** — run logs, named `<project>_<provider>_<model>_<strategy>.*`:
 
-| File | Description                                                |
-|------|------------------------------------------------------------|
-| `<run>.json.log` | Raw JSON streaming output (every event from AI agent)      |
-| `<run>.pretty.md` | Human-readable log (what you see in the console)           |
-| `<run>.session.jsonl` | AI session file |
+| File | Description                                           |
+|------|-------------------------------------------------------|
+| `<run>.json.log` | Raw JSON streaming output (every event from AI agent) |
+| `<run>.pretty.md` | Human-readable log (what you see in the console)      |
+| `<run>.session.jsonl` | AI agent session file                                 |
 
 Example filenames:
 ```
 target/runs/
-├── spring-rest-api_claude-sonnet-4-5-20250514_full.json.log
-├── spring-rest-api_claude-sonnet-4-5-20250514_full.pretty.md
-├── spring-rest-api_claude-sonnet-4-5-20250514_full.session.jsonl
-└── spring-rest-api_claude-sonnet-4-5-20250514_full.review.md
+├── spring-boot-todo-app_google-vertex-anthropic_claude-opus-4-6-default_compatibility.json.log
+├── spring-boot-todo-app_google-vertex-anthropic_claude-opus-4-6-default_compatibility.pretty.md
+└── ses_<opencode-session-id>.session.jsonl
 ```
 
-**`target/workdirs/<project>/`** — the migrated project source code (pom.xml, src/, etc.)
+**`target/workdirs/<project>/`** — the project source code (pom.xml, src/, etc.)
 
 You can resume a migration session to inspect or continue using AI agent command:
 

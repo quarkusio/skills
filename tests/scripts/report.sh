@@ -3,9 +3,9 @@
 # report.sh — Generate an HTML dashboard from test run history.
 #
 # Usage:
-#   ./report.sh                          # reads target/runs/, writes target/runs/report.html
-#   ./report.sh /path/to/runs/           # custom runs directory
-#   ./report.sh target/runs/ report.html # custom output path
+#   ./scripts/report.sh                          # reads target/runs/, writes target/runs/report.html
+#   ./scripts/report.sh /path/to/runs/           # custom runs directory
+#   ./scripts/report.sh target/runs/ report.html # custom output path
 #
 # The report is a single self-contained HTML file with no external dependencies.
 # Re-run after each test to update. Opens in any browser.
@@ -13,7 +13,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-RUNS_DIR="${1:-$SCRIPT_DIR/target/runs}"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+RUNS_DIR="${1:-$PROJECT_DIR/target/runs}"
 OUTPUT="${2:-$RUNS_DIR/report.html}"
 HISTORY="$RUNS_DIR/history.jsonl"
 
