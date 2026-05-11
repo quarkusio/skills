@@ -22,9 +22,12 @@ conventions below.
 Before generating any project, always verify the current latest stable Quarkus release. The version baked into
 this skill may be stale. Use web search or the Maven Central / GitHub releases to confirm.
 
-- Community latest stable: check https://github.com/quarkusio/quarkus/releases (e.g. currently `3.32.x`)
+- Quarkus community latest stable: check https://github.com/quarkusio/quarkus/releases (e.g. currently `3.32.x`)
 - LTS stream: currently `3.27.x` and `3.20.x` (use LTS only if user explicitly requests long-term stability)
 - Red Hat build of Quarkus (RHBQ): use when the user mentions Red Hat support, OpenShift production, or RHBQ
+- IBM Enterprise Build of Quarkus (IBQ): use when the user mentions IBM support, IBM Cloud, or IBQ
+
+For platform-specific BOM coordinates, Maven repositories, and registry configuration, see `references/platform-offerings.md`.
 
 Use the latest stable community version unless told otherwise.
 
@@ -224,4 +227,3 @@ quarkus create app org.acme:event-service:1.0.0-SNAPSHOT \
 - **NEVER** use `io.quarkus:quarkus-maven-plugin` in the create command — always use
   `io.quarkus.platform:quarkus-maven-plugin` (the platform plugin resolves the full BOM)
 - Always verify the Quarkus version at Step 0 before filling in commands
-- If the user is on Red Hat OpenShift or wants RHBQ, see `references/rhbq.md` for RHBQ-specific guidance
