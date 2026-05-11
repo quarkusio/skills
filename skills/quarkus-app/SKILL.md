@@ -45,10 +45,14 @@ Before generating, collect:
 | `extensions` | *(required)* | See extension guidance below |
 | `build tool` | Maven | Ask if user prefers Gradle |
 | `Java version` | 25 | Always ask — suggest 25 as the default |
+| `platform` | community | Ask if user mentions Red Hat, IBM, Camel — see `references/platform-offerings.md` |
 
 If the user hasn't specified a Java version, ask which version they'd like to use and suggest 25 as the default.
 
 If the user hasn't specified extensions, ask or propose sensible defaults based on their described use case.
+
+If the user selected a non-community platform (Red Hat, IBM, Camel), follow the **Pre-Generation Setup** in
+`references/platform-offerings.md` before proceeding to Step 2.
 
 ---
 
@@ -139,7 +143,12 @@ See `references/extensions.md` for a curated list of commonly used extensions by
 
 ## Step 4 — Post-Generation Guidance
 
-After generating, always remind the user:
+After generating:
+
+If the user selected a non-community platform, follow the **Post-Generation Setup** in
+`references/platform-offerings.md` to verify and fix BOM coordinates and Maven repositories.
+
+Then always remind the user:
 
 1. **Dev mode**: `./mvnw quarkus:dev` (Maven) or `quarkus dev` (CLI)
 2. **Dev UI**: available at `http://localhost:8080/q/dev` — useful for extension management
