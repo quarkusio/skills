@@ -35,7 +35,7 @@ Before generating, collect:
 
 | Parameter | Default | Notes |
 |---|---|---|
-| `groupId` | `io.arrogantprogrammer` | Always ask if not provided |
+| `groupId` | `org.acme` | Always ask if not provided |
 | `artifactId` | *(required)* | The app name / Maven artifact ID |
 | `version` | `1.0.0-SNAPSHOT` | Standard Maven SNAPSHOT for new apps |
 | `extensions` | *(required)* | See extension guidance below |
@@ -189,7 +189,7 @@ quarkus ext ls -i -s=ai # search by keyword
 ### Minimal REST + PostgreSQL service (CLI)
 
 ```bash
-quarkus create app io.arrogantprogrammer:my-service:1.0.0-SNAPSHOT \
+quarkus create app org.acme:my-service:1.0.0-SNAPSHOT \
   --no-code \
   -x=rest-jackson,hibernate-orm-panache,jdbc-postgresql
 ```
@@ -198,7 +198,7 @@ quarkus create app io.arrogantprogrammer:my-service:1.0.0-SNAPSHOT \
 
 ```bash
 mvn io.quarkus.platform:quarkus-maven-plugin:3.32.3:create \
-  -DprojectGroupId=io.arrogantprogrammer \
+  -DprojectGroupId=org.acme \
   -DprojectArtifactId=my-service \
   -DprojectVersion=1.0.0-SNAPSHOT \
   -Dextensions='rest-jackson,hibernate-orm-panache,jdbc-postgresql' \
@@ -208,7 +208,7 @@ mvn io.quarkus.platform:quarkus-maven-plugin:3.32.3:create \
 ### AI/LangChain4j service
 
 ```bash
-quarkus create app io.arrogantprogrammer:ai-service:1.0.0-SNAPSHOT \
+quarkus create app org.acme:ai-service:1.0.0-SNAPSHOT \
   --no-code \
   -x=rest-jackson,io.quarkiverse.langchain4j:quarkus-langchain4j-openai
 ```
@@ -216,7 +216,7 @@ quarkus create app io.arrogantprogrammer:ai-service:1.0.0-SNAPSHOT \
 ### Kafka event-driven service
 
 ```bash
-quarkus create app io.arrogantprogrammer:event-service:1.0.0-SNAPSHOT \
+quarkus create app org.acme:event-service:1.0.0-SNAPSHOT \
   --no-code \
   -x=messaging-kafka,rest-jackson
 ```
