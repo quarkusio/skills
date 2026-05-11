@@ -3,10 +3,11 @@ name: quarkus-app
 description: >
   Use this skill whenever a user wants to create, scaffold, bootstrap, initialize, generate, or set up a new
   Quarkus application or microservice. Also trigger when a user asks how to add extensions to an existing Quarkus
-  project, upgrade a Quarkus version, or maintain a Quarkus app's dependencies. This skill ensures all projects
-  are generated using the latest official Quarkus platform version, proper tooling (CLI preferred, Maven plugin as
-  fallback), and official platform or Quarkiverse extensions only. Trigger even for casual phrasing like "spin up
-  a Quarkus app", "start a new Quarkus service", "create a Quarkus REST API", or "add a Quarkus extension".
+  project or maintain a Quarkus app's dependencies. This skill ensures all projects are generated using the latest
+  official Quarkus platform version, proper tooling (CLI preferred, Maven plugin as fallback), and official
+  platform or Quarkiverse extensions only. Trigger even for casual phrasing like "spin up a Quarkus app",
+  "start a new Quarkus service", "create a Quarkus REST API", or "add a Quarkus extension".
+  For upgrading Quarkus versions, see the quarkus-update skill instead.
 ---
 
 # Quarkus App Skill
@@ -153,15 +154,8 @@ After generating, always remind the user:
 
 ### Upgrade Quarkus version
 
-```bash
-# CLI (preferred)
-quarkus update
-
-# Maven plugin
-./mvnw quarkus:update
-```
-
-Always check the migration guide at `https://quarkus.io/guides/update-quarkus` before upgrading.
+For detailed build-file comparison and upgrade analysis, use the `quarkus-update` skill. It compares your
+project's build files against reference generated projects to identify exactly what needs to change.
 
 ### Add extensions to existing project (run from project root)
 

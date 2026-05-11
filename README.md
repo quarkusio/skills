@@ -59,7 +59,7 @@ Check if a Quarkus project's build files are up-to-date by comparing against ref
 Scaffolds and maintains Quarkus applications. Use this skill when you want to:
 * Create a new Quarkus project with specific extensions
 * Add extensions to an existing project
-* Upgrade Quarkus versions with Red Hat Build of Quarkus (RHBQ) support
+* Manage Red Hat Build of Quarkus (RHBQ) projects
 
 **Usage:** Ask Claude Code: "Create a Quarkus REST API with PostgreSQL" or "Add Kafka to my Quarkus project"
 
