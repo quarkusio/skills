@@ -6,13 +6,13 @@ Migrate JSP pages and tag libraries to Spring MVC + Thymeleaf as an intermediate
 
 - [ ] Add `spring-boot-starter-thymeleaf` dependency to `pom.xml`
 - [ ] Convert JSP files to Thymeleaf `.html` templates
-- [ ] Move templates from `src/main/webapp/WEB-INF/jsp/` to `src/main/resources/templates/`
+- [ ] Move templates from `webapp/WEB-INF/jsp/` to `resources/templates/`
 - [ ] Replace JSTL tags with Thymeleaf expressions
 - [ ] Update controller methods to return logical view names (without `.jsp` extension)
 - [ ] Remove JSP-specific configuration (view resolver, prefix/suffix)
 - [ ] Convert custom tag libraries to Thymeleaf dialects or utility methods
 - [ ] Test rendering in browser
-- [ ] Compile: `mvn clean compile -DskipTests`
+- [ ] Compile: `./mvnw clean compile -DskipTests` or `./gradlew clean compile -x test`
 
 ## Why Migrate from JSP to Thymeleaf?
 
@@ -20,42 +20,40 @@ JSP is not supported in Quarkus. The migration path is: **JSP → Thymeleaf → 
 
 ## Dependency
 
-Add `spring-boot-starter-thymeleaf` starter to `pom.xml`:
+Add `spring-boot-starter-thymeleaf` starter to the project build definition file (`pom.xml` if using Maven, `build.gradle` or `build.gradle.kts` for Gradle).
 
-
-Remove JSP dependencies (if explicitly declared), such as `tomcat-embed-jasper` or `javax.servlet:jstl`.
-
+Remove JSP dependencies (if explicitly declared), such as `jstl` or `jsp-api`.
 
 ## JSP → Thymeleaf Syntax Conversion
 
 | JSP / JSTL | Thymeleaf | Notes |
 |---|---|---|
 | `${name}` | `${name}` or `th:text="${name}"` | Expression in attribute or body |
-| `<c:out value="${name}"/>` | `<span th:text="${name}"/>` | Escaped output |
-| `<c:out value="${html}" escapeXml="false"/>` | `<span th:utext="${html}"/>` | Unescaped HTML |
+| `<c:out value="${name}"/>` | `<span th:text="${name}"></span>` | Escaped output |
+| `<c:out value="${html}" escapeXml="false"/>` | `<span th:utext="${html}"></span>` | Unescaped HTML |
 | `<c:forEach items="${items}" var="item">` | `<div th:each="item : ${items}">` | Loop iteration |
 | `<c:if test="${condition}">` | `<div th:if="${condition}">` | Conditional block |
 | `<c:choose><c:when test="${x}">...<c:otherwise>` | `<div th:if="${x}">...<div th:unless="${x}">` | Conditional switch |
-| `<fmt:formatDate value="${date}" pattern="yyyy-MM-dd"/>` | `<span th:text="${#temporals.format(date, 'yyyy-MM-dd')}"/>` | Date formatting (`java.time` in Spring Boot 3+) |
-| `<fmt:formatNumber value="${price}" pattern="#,##0.00"/>` | `<span th:text="${#numbers.formatDecimal(price, 1, 2)}"/>` | Number formatting |
+| `<fmt:formatDate value="${date}" pattern="yyyy-MM-dd"/>` | `<span th:text="${#temporals.format(date, 'yyyy-MM-dd')}"></span>` | Date formatting (`java.time` in Spring Boot 3+) |
+| `<fmt:formatNumber value="${price}" pattern="#,##0.00"/>` | `<span th:text="${#numbers.formatDecimal(price, 1, 2)}"></span>` | Number formatting |
 | `<c:url value="/path/${id}"/>` | `<a th:href="@{/path/{id}(id=${id})}">` | URL with path variable |
 | `<form action="${pageContext.request.contextPath}/submit">` | `<form th:action="@{/submit}">` | Form action |
-| `<%@ include file="header.jsp" %>` | `<div th:replace="~{fragments/header :: header}"/>` | Static include |
-| `<jsp:include page="header.jsp"/>` | `<div th:insert="~{fragments/header :: header}"/>` | Dynamic include |
+| `<%@ include file="header.jsp" %>` | `<div th:replace="~{fragments/header :: header}"></div>` | Static include |
+| `<jsp:include page="header.jsp"/>` | `<div th:insert="~{fragments/header :: header}"/></div>` | Dynamic include |
 | `${pageContext.request.userPrincipal.name}` | `${#authentication.name}` | Security context (requires `thymeleaf-extras-springsecurity6`) |
 
 ## Template File Location
 
 ```
 # BEFORE (JSP)
-src/main/webapp/WEB-INF/jsp/todos.jsp
-src/main/webapp/WEB-INF/jsp/todo-detail.jsp
-src/main/webapp/WEB-INF/views/error.jsp
+webapp/WEB-INF/jsp/todos.jsp
+webapp/WEB-INF/jsp/todo-detail.jsp
+webapp/WEB-INF/views/error.jsp
 
 # AFTER (Thymeleaf)
-src/main/resources/templates/todos.html
-src/main/resources/templates/todo-detail.html
-src/main/resources/templates/error.html
+resources/templates/todos.html
+resources/templates/todo-detail.html
+resources/templates/error.html
 ```
 
 ## Controller Changes
@@ -102,7 +100,7 @@ Spring Boot auto-configures Thymeleaf when `spring-boot-starter-thymeleaf` is on
 
 ## Static Assets
 
-Static files can remain in `src/main/resources/static/` for Spring Boot. References in templates:
+Static files can remain in `resources/static/` for Spring Boot. References in templates:
 
 **JSP:**
 ```jsp

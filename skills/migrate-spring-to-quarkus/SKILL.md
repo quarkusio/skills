@@ -39,7 +39,6 @@ Load the relevant reference file when working on a module:
 | [references/annotation-map.md](references/annotation-map.md) | Code module: annotation, DI, REST, Data, Security migration |
 | [references/config-map.md](references/config-map.md) | Build module: configuration property migration |
 
-
 ## Step 1: Analyze & Choose Strategy
 
 Scan the application to understand what needs to migrate:
