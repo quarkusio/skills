@@ -230,7 +230,6 @@ class MigrationTest {
         result.setApiCalls(usage.apiCalls());
         result.setReviewTokens(usage.totalTokens());
         result.setReviewCost(usage.totalCost());
-        result.setApiCalls(usage.apiCalls());
 
         // 4. Run checks
         MigrationChecks checks = new MigrationChecks(workDir);
