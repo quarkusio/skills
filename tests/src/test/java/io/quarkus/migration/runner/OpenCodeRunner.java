@@ -9,12 +9,16 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static io.quarkus.migration.runner.OpenCodeSessionExporter.exportSessions;
 
@@ -26,8 +30,7 @@ public class OpenCodeRunner extends AbstractRunner implements AgentRunner {
     }
 
     /**
-     * Run the opencode agent against the given project directory. Streams structured JSON output to console in
-     * real-time.
+     * Run the opencode agent against the given project directory. Streams structured JSON output to console in real-time.
      *
      * @param projectDir the project to migrate
      * @param outputDir where to store run artifacts (logs, session, etc.)
@@ -56,10 +59,8 @@ public class OpenCodeRunner extends AbstractRunner implements AgentRunner {
         cmd.addAll(List.of("script", "-q", "/dev/null"));
         cmd.add(aiCmd);
         cmd.add("run");
-        cmd.add("--format");
-        cmd.add("json");
-        cmd.add("--title");
-        cmd.add(runName); // We run as Title Id the name of the run session
+        cmd.addAll(List.of("--format", "json"));
+        cmd.addAll(List.of("--title", runName)); // Use as title the name of the run session
         addModelArgs(cmd);
 
         cmd.add(userPrompt);
@@ -251,9 +252,125 @@ public class OpenCodeRunner extends AbstractRunner implements AgentRunner {
     }
 
     @Override
-    public ReviewOutput review(String sessionFile, Path projectDir, Path outputDir, String runName, Path skillPath,
-            Map<String, Boolean> checkResults) {
-        return null;
+    public ReviewOutput review(String migrationSessionFile, Path projectDir, Path outputDir,
+            String runName, Path skillPath,
+            Map<String, Boolean> checkResults) throws InterruptedException, IOException {
+        if (migrationSessionFile == null) {
+            return new ReviewOutput("No migration session available for review.", new UsageStats(0, 0, 0, "unknown"));
+        }
+
+        // Build check summary for the prompt
+        var checkSummary = new StringBuilder();
+        checkResults.forEach((check, passed) ->
+                checkSummary.append("  ").append(passed ? "✅" : "❌").append(" ").append(check).append("\n"));
+
+        String prompt = """
+                You just completed a migration of a Spring Boot project to Quarkus. \
+                Review the migration session above and evaluate how the skill instructions performed.
+                
+                Check results:
+                %s
+                Based on this migration run, write a brief review covering:
+                
+                1. **What went well** — which parts of the skill worked smoothly
+                2. **What went wrong** — any errors, retries, or failed checks and why
+                3. **Skill improvement suggestions** — concrete changes to the SKILL.md that would \
+                   help future migrations (missing instructions, wrong mappings, unclear steps, etc.)
+                4. **Rating** — rate the skill 1-5 for this migration (5 = perfect, no issues)
+                
+                Be specific and actionable. Reference actual files and errors from the migration. \
+                Read the current skill file at %s to see what instructions were given.
+                
+                Write your review as markdown.""".formatted(checkSummary.toString(), skillPath.resolve("SKILL.md"));
+
+        var sessionId = extractSessionId(migrationSessionFile);
+        if (sessionId.isBlank()) {
+            return new ReviewOutput("No session id found.", new UsageStats(0, 0, 0, "unknown"));
+        }
+
+        List<String> cmd = new ArrayList<>();
+        cmd.addAll(List.of("script", "-q", "/dev/null"));
+        cmd.add(aiCmd);
+        cmd.add("run");
+        cmd.addAll(List.of("--format", "json"));
+        cmd.addAll(List.of("-s", sessionId, "--fork"));
+        addModelArgs(cmd);
+
+        cmd.add(prompt);
+
+        System.out.println("  ai cmd:   " + cmd);
+        System.out.println();
+        System.out.println("  ── Skill Review ──────────────────────────────────────");
+
+        ProcessBuilder pb = new ProcessBuilder(cmd)
+                .directory(projectDir.toFile())
+                .redirectErrorStream(true);
+
+        Instant start = Instant.now();
+        Process process;
+        try {
+            process = pb.start();
+        } catch (IOException e) {
+            System.err.println("  ERROR: Failed to start opencode: " + e.getMessage());
+            return new ReviewOutput("", null);
+        }
+
+        System.out.println("  opencode pid:  " + process.pid());
+        System.out.println("─".repeat(60));
+
+        var reviewText = new StringBuilder();
+        var rawLog = new StringBuilder();
+        Path reviewFile = outputDir.resolve(runName + ".review.md");
+
+        Thread readerThread = Thread.startVirtualThread(() -> {
+            try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    rawLog.append(line).append("\n");
+                    try {
+                        JsonNode event = JSON.readTree(line);
+                        String eventType = event.path("type").asText("");
+                        if ("text".equals(eventType)) {
+                            String text = event.path("part").path("text").asText("");
+                            if (!text.isBlank() && text.contains("Here is the review")) {
+                                reviewText.append(text);
+                                System.out.print(text);
+                                System.out.flush();
+                            }
+                        } else {
+                            System.out.flush();
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            } catch (IOException ignored) {
+            }
+        });
+
+        boolean finished = process.waitFor(120, TimeUnit.SECONDS);
+        if (!finished) {
+            process.destroyForcibly();
+            process.waitFor(10, TimeUnit.SECONDS);
+        }
+        readerThread.join(5000);
+
+        Duration duration = Duration.between(start, Instant.now());
+
+        //TODO: iterate through the list
+        UsageStats reviewUsage = extractUsage(Collections.singletonList(migrationSessionFile));
+
+        // Save review to file
+        String review = reviewText.toString().trim();
+        Files.writeString(reviewFile, review);
+
+        System.out.println();
+        System.out.printf("  Review: %ds, %d tokens, $%.4f%n",
+                duration.toSeconds(), reviewUsage.totalTokens(), reviewUsage.totalCost());
+        System.out.println("  Saved:  " + reviewFile);
+        System.out.println("  ─────────────────────────────────────────────────────");
+
+        return new ReviewOutput(review, reviewUsage);
     }
 
     @Override
@@ -267,6 +384,19 @@ public class OpenCodeRunner extends AbstractRunner implements AgentRunner {
         } else if (hasModel) {
             cmd.add("-m");
             cmd.add(model);
+        }
+    }
+
+    String extractSessionId(String sessionFilePath) {
+
+        // Pattern matches "ses_" followed by one or more alphanumeric characters
+        Pattern pattern = Pattern.compile("(ses_[a-zA-Z0-9]+)");
+        Matcher matcher = pattern.matcher(sessionFilePath);
+
+        if (matcher.find()) {
+            return matcher.group(1);
+        } else {
+            return "";
         }
     }
 }

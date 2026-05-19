@@ -245,15 +245,12 @@ class MigrationTest {
                     }
                 }));
 
-
-        /* TODO: To be reviewed and investigated: Do we need it ?
         // 5. Run skill review (separate ai session)
         AgentRunner.ReviewOutput reviewOutput = runner.review(
                 output.sessionFiles().getFirst(), workDir, outputDir, runName, skillPath, result.getChecks());
         result.setReview(reviewOutput.review());
         result.setReviewTokens(reviewOutput.usage().totalTokens());
         result.setReviewCost(reviewOutput.usage().totalCost());
-         */
 
         // 6. Record result
         tracker.record(result);
@@ -268,7 +265,6 @@ class MigrationTest {
     }
 
     // -- helpers --
-
     private Path prepareWorkDir(ProjectConfig config, Path projectDir) throws IOException, InterruptedException {
         // Put work dirs under target/workdirs/ so they survive JVM exit but get cleaned on mvn clean
         Path workdirsBase = Path.of("").toAbsolutePath().resolve("target").resolve("workdirs");
