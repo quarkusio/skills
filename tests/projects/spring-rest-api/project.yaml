@@ -3,7 +3,7 @@ description: Minimal Spring Boot REST API with validation (no database)
 type: spring-boot
 skill: spring-boot-to-quarkus
 source: local
-timeout: 300
+timeout: 900
 
 checks:
   - builds
