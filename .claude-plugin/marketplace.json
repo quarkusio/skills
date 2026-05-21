@@ -1,7 +1,7 @@
 {
   "name": "quarkus-skills",
   "owner": {
-    "name": "Quarkus Team",
+    "name": "Quarkus Community",
     "url": "https://quarkus.io"
   },
   "metadata": {
@@ -15,7 +15,8 @@
       "source": "./",
       "strict": false,
       "skills": [
-        "./skills/quarkus-update"
+        "./skills/quarkus-update",
+        "./skills/migrate-spring-to-quarkus"
       ]
     }
   ]
