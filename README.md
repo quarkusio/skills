@@ -54,6 +54,15 @@ Check if a Quarkus project's build files are up-to-date by comparing against ref
 
 **Usage:** Ask Claude Code: "Check if my Quarkus project is up to date" or "Update my Quarkus project"
 
+### quarkus-app
+
+Scaffolds and maintains Quarkus applications. Use this skill when you want to:
+* Create a new Quarkus project with specific extensions
+* Add extensions to an existing project
+* Use other Quarkus platforms and offerings, such as Red Hat Build of Quarkus (RHBQ) or IBM Enterprise Build of Quarkus (IBQ) or your own platform build of Quarkus.
+
+**Usage:** Ask Claude Code: "Create a Quarkus REST API with PostgreSQL" or "Add Kafka to my Quarkus project"
+
 ## Learn More
 
 - [npx skills documentation](https://github.com/vercel-labs/skills)
