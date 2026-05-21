@@ -11,7 +11,7 @@
 
     <name>Quarkus Skills</name>
     <description>Agent skills for developing and maintaining Quarkus applications</description>
-    <url>https://github.com/quarkusio/quarkus-skills</url>
+    <url>https://github.com/quarkusio/skills</url>
 
     <licenses>
         <license>
@@ -30,9 +30,9 @@
     </developers>
 
     <scm>
-        <connection>scm:git:https://github.com/quarkusio/quarkus-skills.git</connection>
-        <developerConnection>scm:git:https://github.com/quarkusio/quarkus-skills.git</developerConnection>
-        <url>https://github.com/quarkusio/quarkus-skills</url>
+        <connection>scm:git:https://github.com/quarkusio/skills.git</connection>
+        <developerConnection>scm:git:https://github.com/quarkusio/skills.git</developerConnection>
+        <url>https://github.com/quarkusio/skills</url>
         <tag>HEAD</tag>
     </scm>
 

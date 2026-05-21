@@ -1,4 +1,5 @@
-# quarkus-skills
+# Quarkus Skills
+
 Agent skills for developing and maintaining Quarkus applications
 
 **NOTE**: This is a work in progress. Use at your own risk.
@@ -12,25 +13,25 @@ This repository contains a collection of skills for developing and maintaining Q
 Install all skills from this repository:
 
 ```bash
-npx skills add quarkusio/quarkus-skills
+npx skills add quarkusio/skills
 ```
 
 List available skills:
 
 ```bash
-npx skills add quarkusio/quarkus-skills --list
+npx skills add quarkusio/skills --list
 ```
 
 Install specific skills only:
 
 ```bash
-npx skills add quarkusio/quarkus-skills --skill quarkus-update
+npx skills add quarkusio/skills --skill quarkus-update
 ```
 
 Install for specific agents:
 
 ```bash
-npx skills add quarkusio/quarkus-skills -a claude-code
+npx skills add quarkusio/skills -a claude-code
 ```
 
 ### Using Claude Code Plugin System
@@ -38,8 +39,8 @@ npx skills add quarkusio/quarkus-skills -a claude-code
 Within Claude Code, you can also install via the plugin marketplace:
 
 ```
-/plugin marketplace add quarkusio/quarkus-skills
-/plugin install quarkus-development@quarkus-skills
+/plugin marketplace add quarkusio/skills
+/plugin install quarkus-development@skills
 ```
 
 ## Available Skills
@@ -52,7 +53,17 @@ Check if a Quarkus project's build files are up-to-date by comparing against ref
 - Compare your build configuration against the latest Quarkus version
 - Upgrade your Quarkus version with guidance on what changes to make
 
-**Usage:** Ask Claude Code: "Check if my Quarkus project is up to date" or "Update my Quarkus project"
+**Triggers:** "check project", "update quarkus", "is my project up to date", "compare build", "quarkus upgrade"
+
+### migrate-spring-to-quarkus
+
+Migrate Spring Boot applications to Quarkus using a modular, gate-driven approach. Supports both Spring compatibility extensions and native Quarkus migration paths. Use this skill when you want to:
+
+- Migrate a Spring Boot application to Quarkus
+- Convert Spring annotations (DI, REST, Data, Security) to Quarkus equivalents
+- Migrate Spring build files, configuration, frontend (Thymeleaf/JSP), and tests
+
+**Triggers:** "spring to quarkus", "quarkus migration", "replace spring", "migrate pom.xml"
 
 ## Learn More
 
