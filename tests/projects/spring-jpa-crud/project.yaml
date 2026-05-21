@@ -1,0 +1,13 @@
+name: spring-jpa-crud
+description: Spring Boot JPA CRUD app with H2, Spring Data, validation
+type: spring-boot
+skill: spring-boot-to-quarkus
+source: local
+timeout: 600
+
+checks:
+  - builds
+  - tests-pass
+  - no-spring-deps
+  - has-quarkus
+  - starts-up

@@ -1,0 +1,14 @@
+name: spring-petclinic-rest
+description: REST-only Spring PetClinic (no templates, pure API)
+type: spring-boot
+skill: spring-boot-to-quarkus
+source: https://github.com/spring-petclinic/spring-petclinic-rest
+ref: master
+timeout: 900
+
+checks:
+  - builds
+  - tests-pass
+  - no-spring-deps
+  - has-quarkus
+  - starts-up
