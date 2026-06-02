@@ -2,18 +2,18 @@
 
 Migrate the build descriptor and configuration files from Spring Boot to Quarkus.
 
-## Gate condition
+## Instructions
 
-Detect the build tool by checking which files exist at the project root:
+- Detect the build tool by checking which files exist at the project root:
 
 | File | Build tool | Sub-module |
 |---|---|---|
 | `pom.xml` | Maven | [build-maven.md](build-maven.md) |
 | `build.gradle` or `build.gradle.kts` | Gradle | [build-gradle.md](build-gradle.md) |
 
-Load [references/dependency-map.md](../references/dependency-map.md) and [references/config-map.md](../references/config-map.md) before starting.
-
-Then load and execute the matching sub-module above. After the sub-module completes, return here and continue with the Configuration Migration and Watch Out sections below.
+- Load [references/dependency-map.md](../references/dependency-map.md) and [references/config-map.md](../references/config-map.md) before starting.
+- Then load and execute the matching submodule above. 
+- After the submodule completes, return here and continue with the Configuration Migration and Watch Out sections below.
 
 ## Configuration Migration
 

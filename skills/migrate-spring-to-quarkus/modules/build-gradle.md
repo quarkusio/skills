@@ -1,4 +1,4 @@
-# Sub-module: Build System (Gradle)
+# Submodule: Build System (Gradle)
 
 Gradle-specific build migration steps. Called from [build.md](build.md).
 Covers both Groovy DSL (`build.gradle`) and Kotlin DSL (`build.gradle.kts`).
