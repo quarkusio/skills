@@ -64,10 +64,16 @@ After the user has chosen a strategy, check if the target project is a git repos
 
 ## Step 3: Execute Modules
 
+## Instructions
+
+- Execute the instructions of the modules according to the following Decision Gate Table
+- Always log which Module and Gate check is evaluated and the status using the format:
+  Gate result: <STATUS> and <CONDITION_EVALUATED>
+
 ### Decision Gate Table 
 
-For each module, evaluate whether it applies to this project. A module executes only when its gate is **PASS**. 
-Inspect the project to determine the gate result — do not rely on blind grep commands; use your understanding of the codebase.
+- For each module, evaluate whether it applies to this project. A module executes only when its gate status is: **PASS**.
+- Inspect the project to determine the gate result — do not rely on blind grep commands; use your understanding of the codebase.
 
 | Module                          | Gate Check                                                                                                                | Gate Result                                                                              |
 |---------------------------------|---------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|

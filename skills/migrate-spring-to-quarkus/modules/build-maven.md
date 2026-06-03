@@ -1,4 +1,4 @@
-# Sub-module: Build System (Maven)
+# Submodule: Build System (Maven)
 
 Maven-specific build migration steps. Called from [build.md](build.md).
 

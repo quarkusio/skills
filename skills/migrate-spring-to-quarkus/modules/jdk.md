@@ -1,4 +1,4 @@
-# Phase 0: Check JDK Version
+# Module: Check JDK Version
 
 Verify that the installed JDK meets the version requirement using the user's prompt VERSION before proceeding with the migration.
 
