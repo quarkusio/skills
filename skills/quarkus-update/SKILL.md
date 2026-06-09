@@ -68,13 +68,17 @@ Compare the user's version against the latest tag. If the user is already on the
 
 When a newer version is available, combine two sources of information:
 
-### 4a: Run `quarkus update --dry-run`
+### 4a: Run update dry-run
 
-This requires the `quarkus` CLI to be installed. Run:
+Run the dry-run using whichever tool is available:
 
-```bash
-quarkus update --dry-run
-```
+| Tool | Command |
+|------|---------|
+| Quarkus CLI | `quarkus update --dry-run` |
+| Maven wrapper | `./mvnw quarkus:update -DrewriteDryRun` |
+| Maven | `mvn quarkus:update -DrewriteDryRun` |
+| Gradle wrapper | `./gradlew quarkusUpdate --rewriteDryRun` |
+| Gradle | `gradle quarkusUpdate --rewriteDryRun` |
 
 This produces (without modifying any files):
 - **Console output:** BOM update suggestions, extension sync status, matched migration recipes
@@ -83,8 +87,6 @@ This produces (without modifying any files):
 - **`target/rewrite/rewrite.log`** — detailed execution log
 
 Read `target/rewrite/rewrite.patch` to understand what code-level changes the update covers.
-
-If the `quarkus` CLI is not available, skip this step and note it in the report.
 
 ### 4b: Fetch generator diff
 
@@ -111,6 +113,6 @@ Present a combined report:
 2. **What `quarkus update` would handle:** Summarize the patch (version bumps, dependency renames, config key migrations)
 3. **What `quarkus update` does NOT cover:** Structural differences from the generator diff that are absent from the patch — these require manual attention
 4. **Recommended actions:**
-   - Run `quarkus update --yes` to apply the automated migrations
+   - Apply the automated migrations using whichever tool is available: `quarkus update --yes`, `./mvnw quarkus:update -Drewrite`, or `./gradlew quarkusUpdate --rewrite`
    - Manually apply remaining structural changes identified from the generator diff
    - Link to the full comparison: `https://github.com/quarkusio/code-with-quarkus-compare/compare/{current_tag}...{latest_tag}`
