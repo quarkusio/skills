@@ -40,7 +40,7 @@ Within Claude Code, you can also install via the plugin marketplace:
 
 ```
 /plugin marketplace add quarkusio/skills
-/plugin install quarkus-development@skills
+/plugin install quarkus-appdev@quarkus-skills
 ```
 
 ## Available Skills
