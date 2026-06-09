@@ -54,15 +54,15 @@ If the reference tag does not exist in the repository (404), inform the user tha
 
 ## Step 3: Check for Newer Quarkus Version
 
-Fetch the list of tags for the user's build tool to find the latest available version:
+Fetch the latest released Quarkus version from Maven Central:
 
 ```
-https://github.com/quarkusio/code-with-quarkus-compare/tags
+https://repo1.maven.org/maven2/io/quarkus/platform/quarkus-bom/maven-metadata.xml
 ```
 
-Or use git: `git ls-remote --tags https://github.com/quarkusio/code-with-quarkus-compare.git '{tag_prefix}*'`
+Read the `<release>` element — this is the latest stable release (as opposed to `<latest>` which may point to a SNAPSHOT or RC).
 
-Compare the user's version against the latest tag. If the user is already on the latest version, report that and stop here.
+Compare the user's version against the `<release>` value. If the user is already on the latest version, report that and stop here.
 
 ## Step 4: Upgrade Analysis (if outdated)
 
