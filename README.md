@@ -57,7 +57,7 @@ Check if a Quarkus project's build files are up-to-date by comparing against ref
 
 ### migrate-spring-to-quarkus
 
-Migrate Spring Boot applications to Quarkus using a modular, gate-driven approach. Supports both Spring compatibility extensions and native Quarkus migration paths. Use this skill when you want to:
+Migrate Spring Boot applications to Quarkus using a modular, gate-driven approach. Supports both Spring compatibility extensions and full Quarkus migration paths. Use this skill when you want to:
 
 - Migrate a Spring Boot application to Quarkus
 - Convert Spring annotations (DI, REST, Data, Security) to Quarkus equivalents
