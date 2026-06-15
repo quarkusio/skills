@@ -95,14 +95,22 @@
                     </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>3.11.2</version>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <version>3.4.2</version>
                         <executions>
                             <execution>
-                                <id>attach-javadocs</id>
+                                <id>empty-javadoc-jar</id>
+                                <phase>package</phase>
                                 <goals>
                                     <goal>jar</goal>
                                 </goals>
+                                <configuration>
+                                    <classifier>javadoc</classifier>
+                                    <classesDirectory>${project.basedir}/src</classesDirectory>
+                                    <excludes>
+                                        <exclude>**</exclude>
+                                    </excludes>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
