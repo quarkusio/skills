@@ -6,10 +6,10 @@ Load [references/annotation-map.md](../references/annotation-map.md) before star
 
 ## What to do
 
-- [ ] Migrate entities (JPA → Panache if native strategy)
-- [ ] Migrate repositories (Spring Data → Panache if native strategy)
+- [ ] Migrate entities (JPA → Panache if full Quarkus strategy)
+- [ ] Migrate repositories (Spring Data → Panache if full Quarkus strategy)
 - [ ] Simplify service layer (remove unnecessary interface+impl)
-- [ ] Migrate controllers/resources (Spring MVC → JAX-RS if native strategy)
+- [ ] Migrate controllers/resources (Spring MVC → JAX-RS if full Quarkus strategy)
 - [ ] Migrate DI annotations (`@Autowired` → `@Inject`, `@Component` → `@ApplicationScoped`, etc.)
 - [ ] Migrate `Model.addAttribute()` → Qute `Template.data()` or `@CheckedTemplate`
 - [ ] Migrate `return "redirect:..."` → `Response.seeOther()`
@@ -18,7 +18,7 @@ Load [references/annotation-map.md](../references/annotation-map.md) before star
 
 Use the annotation-map.md reference for the full mapping. Below are the key patterns with before/after examples.
 
-## Entity Layer (Native strategy)
+## Entity Layer (Full Quarkus strategy)
 
 ```java
 // BEFORE: Spring Data JPA
@@ -41,7 +41,7 @@ public class Todo extends PanacheEntity {
 }
 ```
 
-## Repository Layer (Native strategy)
+## Repository Layer (Full Quarkus strategy)
 
 Two patterns available — choose based on project conventions:
 
@@ -103,7 +103,7 @@ public class TodoService {
 
 **Spring compat strategy**: `@Service` is supported by `quarkus-spring-di` — no changes needed.
 
-## Controller → Resource (Native strategy)
+## Controller → Resource (Full Quarkus strategy)
 
 ```java
 // BEFORE: Spring MVC
