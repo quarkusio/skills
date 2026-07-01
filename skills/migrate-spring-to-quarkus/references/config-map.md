@@ -10,6 +10,8 @@
 | `server.compression.enabled=true` | `quarkus.http.enable-compression=true` |
 | `server.error.include-message=always` | Configure via exception mappers |
 
+**PaaS `$PORT`:** platforms that inject a `$PORT` env var (Heroku, Railway, Cloud Run, Fly) require the app to bind it — use `quarkus.http.port=${PORT:8080}`, the same expression style as Spring's `server.port=${PORT:8080}`.
+
 ## Datasource
 
 Use the `%prod.` prefix on datasource properties so that Quarkus Dev Services can automatically provision a database in dev and test modes. Without the prefix, hardcoded connection values override Dev Services in all profiles.
@@ -22,6 +24,8 @@ This applies when there are no separate `application-{profile}.properties` files
 | `spring.datasource.username` | `%prod.quarkus.datasource.username` |
 | `spring.datasource.password` | `%prod.quarkus.datasource.password` |
 | `spring.datasource.driver-class-name` | `quarkus.datasource.db-kind` (auto-detected, no `%prod.` needed) |
+
+**`db-kind` is a build-time property — a runtime profile cannot switch the JDBC driver.** Quarkus picks the driver and dialect from `quarkus.datasource.db-kind` during the build (augmentation), not at runtime. If the Spring app switches databases by profile (e.g. H2 in dev, PostgreSQL in prod) and both `quarkus-jdbc-h2` and `quarkus-jdbc-postgresql` are on the classpath, a runtime-only `quarkus.profile=prod` swaps the JDBC **URL** but keeps the build-time driver — boot then fails with `Driver does not support the provided URL`. Build the artifact with the target profile active (`quarkusBuild -Dquarkus.profile=prod`, or pass it as a container build arg), or make the prod `db-kind` the unprofiled default and override to H2 under `%dev`/`%test`.
 
 ## JPA / Hibernate
 
@@ -64,8 +68,11 @@ This applies when there are no separate `application-{profile}.properties` files
 |---|---|
 | `application-{profile}.properties` | `application-{profile}.properties` (same convention) |
 | `spring.profiles.active=dev` | `quarkus.profile=dev` or `-Dquarkus.profile=dev` |
+| `SPRING_PROFILES_ACTIVE=prod` (env var) | `QUARKUS_PROFILE=prod` (env var) |
 | `@Profile("dev")` | `@IfBuildProfile("dev")` |
 | `application-test.properties` | `%test.` prefix in `application.properties`, or `application-test.properties` |
+
+Environment overrides use relaxed binding: SmallRye Config maps `FOO_BAR_BAZ` onto `foo.bar-baz`, so most `UPPER_SNAKE` env vars from a Spring deployment keep working (e.g. `APP_MAX_SESSIONS` → `app.max-sessions`).
 
 ## CORS
 
