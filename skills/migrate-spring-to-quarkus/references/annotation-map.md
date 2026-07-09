@@ -69,7 +69,7 @@
 | `@Table` | `@Table` | Same | |
 | `@Id` / `@EmbeddedId` | Same | Same | |
 | `@GeneratedValue` | Same | Same | |
-| `@Transactional` | `jakarta.transaction.Transactional` | Same | **NOT Spring's** `@Transactional` |
+| `@Transactional` | `jakarta.transaction.Transactional` | Supported via `quarkus-spring-tx` | Compat: keeps Spring's `@Transactional` as-is. Full: replace with `jakarta.transaction.Transactional`. See notes below |
 | `@Query("JPQL")` | Panache `find()` / named queries | Supported | Named `:param` and positional `?1` both work. **SpEL `#{...}` NOT supported** |
 | `@Param("name")` | — | Supported | Binds named parameters in `@Query` |
 | `@Modifying` | — | Supported | For UPDATE/DELETE queries; returns void, int, or long |
@@ -80,6 +80,15 @@
 | `ListPagingAndSortingRepository<T,ID>` | `PanacheRepository<T>` | Supported | |
 | `@RepositoryDefinition` | — | Supported | Custom repository without extending interface |
 | `@NoRepositoryBean` | — | Supported | For intermediate base repository interfaces |
+
+**Compat `@Transactional` notes (`quarkus-spring-tx`):**
+- Add `quarkus-spring-tx` to keep `org.springframework.transaction.annotation.Transactional` working without code changes
+- `propagation` attribute: `REQUIRED`, `REQUIRES_NEW`, `NESTED`, `SUPPORTS`, `NOT_SUPPORTED`, `MANDATORY`, `NEVER` — all mapped to Jakarta equivalents at build time
+- `readOnly` attribute: accepted but has no effect — Quarkus/Narayana does not optimize read-only transactions
+- `rollbackFor` / `noRollbackFor`: supported
+- `timeout`: supported
+- Without `quarkus-spring-tx` (full migration): replace import with `jakarta.transaction.Transactional` and adapt attributes manually (e.g., `propagation = SUPPORTS` → `@Transactional(TxType.SUPPORTS)`, drop `readOnly`)
+- See [quarkus#54089](https://github.com/quarkusio/quarkus/issues/54089) for background
 
 **Compat Spring Data JPA notes:**
 - **Derived queries** fully supported: `findBy*`, `countBy*`, `deleteBy*`, `existsBy*`
