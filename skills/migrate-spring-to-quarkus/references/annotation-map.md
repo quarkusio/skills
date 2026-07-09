@@ -83,10 +83,10 @@
 
 **Compat `@Transactional` notes (`quarkus-spring-tx`):**
 - Add `quarkus-spring-tx` to keep `org.springframework.transaction.annotation.Transactional` working without code changes
-- `propagation` attribute: `REQUIRED`, `REQUIRES_NEW`, `NESTED`, `SUPPORTS`, `NOT_SUPPORTED`, `MANDATORY`, `NEVER` — all mapped to Jakarta equivalents at build time
-- `readOnly` attribute: accepted but has no effect — Quarkus/Narayana does not optimize read-only transactions
+- `propagation` attribute: all values except `NESTED` are supported (`REQUIRED` default, `REQUIRES_NEW`, `SUPPORTS`, `MANDATORY`, `NOT_SUPPORTED`, `NEVER`). `NESTED` causes a build-time error
+- `readOnly` attribute: unsupported — ignored with a warning
 - `rollbackFor` / `noRollbackFor`: supported
-- `timeout`: supported
+- `timeout` / `timeoutString`: unsupported — ignored with a warning
 - Without `quarkus-spring-tx` (full migration): replace import with `jakarta.transaction.Transactional` and adapt attributes manually (e.g., `propagation = SUPPORTS` → `@Transactional(TxType.SUPPORTS)`, drop `readOnly`)
 - See [quarkus#54089](https://github.com/quarkusio/quarkus/issues/54089) for background
 
