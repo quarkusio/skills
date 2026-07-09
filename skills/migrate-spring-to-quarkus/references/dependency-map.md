@@ -46,7 +46,7 @@
 | Spring Boot | Quarkus (Full) | Quarkus (Compat) |
 |---|---|---|
 | `spring-boot-starter` (DI) | `quarkus-arc` (included by default) | `quarkus-spring-di` |
-| `spring-tx` / `@Transactional` | `quarkus-narayana-jta` (included by default) | `quarkus-spring-tx` |
+| `spring-tx` / `@Transactional` | `quarkus-narayana-jta` (usually pulled in by Hibernate ORM; add explicitly if needed) | `quarkus-spring-tx` |
 | `spring-boot-configuration-processor` | `quarkus-arc` (built-in config mapping) | `quarkus-spring-boot-properties` |
 | `spring-boot-starter-quartz` | `quarkus-quartz` or `quarkus-scheduler` | `quarkus-spring-scheduled` |
 
