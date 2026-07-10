@@ -60,6 +60,7 @@ public class OpenCodeRunner extends AbstractRunner implements AgentRunner {
         cmd.add(aiCmd);
         cmd.add("run");
         cmd.addAll(List.of("--format", "json"));
+        cmd.addAll(List.of("--dir", projectDir.toString()));
         cmd.addAll(List.of("--title", runName)); // Use as title the name of the run session
         addModelArgs(cmd);
 
