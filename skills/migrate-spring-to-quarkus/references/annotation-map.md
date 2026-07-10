@@ -69,7 +69,7 @@
 | `@Table` | `@Table` | Same | |
 | `@Id` / `@EmbeddedId` | Same | Same | |
 | `@GeneratedValue` | Same | Same | |
-| `@Transactional` | `jakarta.transaction.Transactional` | Supported via `quarkus-spring-tx` | Compat: keeps Spring's `@Transactional` as-is. Full: replace with `jakarta.transaction.Transactional`. See notes below |
+| `@Transactional` | `jakarta.transaction.Transactional` | Supported via `quarkus-spring-tx` | Compat: keeps Spring's `@Transactional` as-is. Full: replace with `jakarta.transaction.Transactional`. See [compat notes](#compat-transactional-notes-quarkus-spring-tx) |
 | `@Query("JPQL")` | Panache `find()` / named queries | Supported | Named `:param` and positional `?1` both work. **SpEL `#{...}` NOT supported** |
 | `@Param("name")` | — | Supported | Binds named parameters in `@Query` |
 | `@Modifying` | — | Supported | For UPDATE/DELETE queries; returns void, int, or long |
@@ -82,11 +82,11 @@
 | `@NoRepositoryBean` | — | Supported | For intermediate base repository interfaces |
 
 **Compat `@Transactional` notes (`quarkus-spring-tx`):**
-- Add `quarkus-spring-tx` to keep `org.springframework.transaction.annotation.Transactional` working without code changes
+- Add `quarkus-spring-tx` dependency to keep `org.springframework.transaction.annotation.Transactional` working without code changes
 - `propagation` attribute: all values except `NESTED` are supported (`REQUIRED` default, `REQUIRES_NEW`, `SUPPORTS`, `MANDATORY`, `NOT_SUPPORTED`, `NEVER`). `NESTED` causes a build-time error
-- `readOnly` attribute: unsupported — ignored with a warning
+- `readOnly` attribute: unsupported — silently ignored at runtime. Flag in migration summary as a behavioral difference
 - `rollbackFor` / `noRollbackFor`: supported
-- `timeout` / `timeoutString`: unsupported — ignored with a warning
+- `timeout` / `timeoutString`: unsupported — silently ignored at runtime. Flag in migration summary as a behavioral difference
 - Without `quarkus-spring-tx` (full migration): replace import with `jakarta.transaction.Transactional` and adapt attributes manually (e.g., `propagation = SUPPORTS` → `@Transactional(TxType.SUPPORTS)`, drop `readOnly`)
 - See [quarkus#54089](https://github.com/quarkusio/quarkus/issues/54089) for background
 
