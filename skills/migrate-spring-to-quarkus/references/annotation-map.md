@@ -88,7 +88,6 @@
 - `rollbackFor` / `noRollbackFor`: supported
 - `timeout` / `timeoutString`: unsupported — silently ignored at runtime. Flag in migration summary as a behavioral difference
 - Without `quarkus-spring-tx` (full migration): replace import with `jakarta.transaction.Transactional` and adapt attributes manually (e.g., `propagation = SUPPORTS` → `@Transactional(TxType.SUPPORTS)`, drop `readOnly`)
-- See [quarkus#54089](https://github.com/quarkusio/quarkus/issues/54089) for background
 
 **Compat Spring Data JPA notes:**
 - **Derived queries** fully supported: `findBy*`, `countBy*`, `deleteBy*`, `existsBy*`
