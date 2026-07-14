@@ -8,3 +8,5 @@ target/
 .vscode/
 *.class
 *.log
+tests/reports/
+tests/.venv/
