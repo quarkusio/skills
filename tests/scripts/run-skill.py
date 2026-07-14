@@ -259,26 +259,26 @@ def run(skill_name: str, project_name: str):
         shutil.rmtree(oc_data)
         oc_data.mkdir(parents=True, exist_ok=True)
 
-    # Step 3: Symlink the chosen skill + shared content
-    print(f"→ Setting up skill symlinks for: {skill_name}")
+    # Step 3: Copy the chosen skill + shared content
+    print(f"→ Copying skill files for: {skill_name}")
     skills_target = OPENCODE_DIR / "skills"
     shared_target = OPENCODE_DIR / "shared"
     skills_target.mkdir(parents=True, exist_ok=True)
     shared_target.mkdir(parents=True, exist_ok=True)
 
-    link_skill = skills_target / "SKILL.md"
-    link_shared = shared_target / "migration-steps.md"
-    link_skill.unlink(missing_ok=True)
-    link_shared.unlink(missing_ok=True)
+    dest_skill = skills_target / "SKILL.md"
+    dest_shared = shared_target / "migration-steps.md"
+    dest_skill.unlink(missing_ok=True)
+    dest_shared.unlink(missing_ok=True)
 
-    link_skill.symlink_to(skill_md.resolve())
-    print(f"  skills/SKILL.md → {skill_md.resolve()}")
+    shutil.copy2(skill_md, dest_skill)
+    print(f"  skills/SKILL.md ← {skill_md.resolve()}")
 
     if shared_md.exists():
-        link_shared.symlink_to(shared_md.resolve())
-        print(f"  shared/migration-steps.md → {shared_md.resolve()}")
+        shutil.copy2(shared_md, dest_shared)
+        print(f"  shared/migration-steps.md ← {shared_md.resolve()}")
 
-    loaded_name = read_skill_field(link_skill, "name")
+    loaded_name = read_skill_field(dest_skill, "name")
     print(f"  Loaded skill: {loaded_name}")
 
     # Step 4: Run opencode and capture output + duration
