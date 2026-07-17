@@ -83,9 +83,9 @@ Create the Quarkus project structure with appropriate extensions based on migrat
   <version><!-- from migration-spec --></version>
   
   <properties>
-    <quarkus.version>3.15.1</quarkus.version>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
+    <quarkus.version><!-- from migration-spec: target_technology.quarkus_version --></quarkus.version>
+    <maven.compiler.source><!-- from migration-spec: target_technology.java_version --></maven.compiler.source>
+    <maven.compiler.target><!-- from migration-spec: target_technology.java_version --></maven.compiler.target>
   </properties>
   
   <dependencyManagement>
@@ -165,7 +165,7 @@ Example:
     "src/main/resources/application.properties",
     "src/main/java/com/example/"
   ],
-  "quarkus_version": "3.15.1",
+  "quarkus_version": "<from migration-spec: target_technology.quarkus_version>",
   "java_version": "17",
   "extensions_added": [
     "quarkus-arc",

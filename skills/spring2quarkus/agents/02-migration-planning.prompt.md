@@ -43,37 +43,41 @@ Present these decisions to the user and wait for responses:
 ```
 TECHNOLOGY DECISIONS — please answer each one
 ─────────────────────────────────────────────
-[1] Target Java version
-    1) Java 17 (LTS)  
-    2) Java 21 (LTS with Virtual Threads)  
+[1] Target Quarkus version
+    1) Latest stable release (recommended — agent looks up https://quarkus.io/version/main/quarkus-spring-web/releases and picks the current stable)
+    2) Specify a version manually (e.g. "3.15.1")
+
+[2] Target Java version
+    1) Java 17 (LTS)
+    2) Java 21 (LTS with Virtual Threads)
     3) Other (specify)
 
-[2] Persistence strategy
+[3] Persistence strategy
     1) Hibernate ORM with Panache (recommended - reduces boilerplate)
     2) Hibernate ORM (standard - more control)
     3) Keep Spring Data JPA patterns (requires custom implementation)
 
-[3] Messaging transport (only if messaging detected)
+[4] Messaging transport (only if messaging detected)
     1) kafka (recommended for Kafka)
     2) amqp (for RabbitMQ)
     3) artemis-jms (for JMS)
     4) in-memory (for testing)
     5) none (remove messaging)
 
-[4] Database strategy
+[5] Database strategy
     1) H2 dev + PostgreSQL prod (recommended)
     2) H2 only (for testing)
     3) MySQL
     4) MariaDB
     5) Keep existing database
 
-[5] REST framework
+[6] REST framework
     1) Quarkus REST (RESTEasy Reactive) - recommended
     2) RESTEasy Classic
     3) Spring Web compatibility mode (quarkus-spring-web)
     4) Vert.x Web (for advanced reactive scenarios)
 
-[6] Security approach (only if Spring Security detected)
+[7] Security approach (only if Spring Security detected)
     1) None (remove security)
     2) OIDC / Keycloak
     3) Basic authentication
@@ -83,18 +87,18 @@ TECHNOLOGY DECISIONS — please answer each one
     7) Custom security (quarkus-security)
     8) mTLS (mutual TLS)
 
-[7] Container target
+[8] Container target
     1) Docker (JVM fast-jar) - recommended
     2) Docker (native image)
     3) Podman
     4) None
 
-[8] View technology strategy (only if JSP/JSF/Thymeleaf/FreeMarker detected)
+[9] View technology strategy (only if JSP/JSF/Thymeleaf/FreeMarker detected)
     1) Migrate to Qute (recommended — best Quarkus alignment)
     2) Maintain JSF with Quarkus MyFaces (preserves existing JSF investment)
     3) Auto — let agent decide based on file count
 
-[9] Features to explicitly SKIP
+[10] Features to explicitly SKIP
     List any features to exclude from migration, or enter 'none'
 ```
 
@@ -130,8 +134,9 @@ Path recorded in: `migration-metadata/migration-context.json` → `paths.migrati
 ## Validation
 
 Before completing:
-1. All detected_features flags are boolean (not null)
-2. All user decisions recorded
-3. Phase enabled flags set correctly
-4. Quarkus extensions match detected features
-5. migration-spec.yaml is valid YAML
+1. `target_technology.quarkus_version` is set (not null) — either from latest stable lookup or user-specified value
+2. All detected_features flags are boolean (not null)
+3. All user decisions recorded
+4. Phase enabled flags set correctly
+5. Quarkus extensions match detected features
+6. migration-spec.yaml is valid YAML
