@@ -65,6 +65,14 @@ Migrate Spring Boot applications to Quarkus using a modular, gate-driven approac
 
 **Triggers:** "spring to quarkus", "quarkus migration", "replace spring", "migrate pom.xml"
 
+### spring2quarkus
+
+Migrate Spring Boot applications to Quarkus using a layered approach combined with deterministic validator scripts. The skill requires the original codebase and the migrated one be in separate directories in order to make use of the validators. Use this skill when you want to:
+
+- Migrate a Spring Boot application to Quarkus
+
+**Triggers:** "spring2quarkus", "spring to quarkus", "quarkus migration"
+
 ## Learn More
 
 - [npx skills documentation](https://github.com/vercel-labs/skills)
