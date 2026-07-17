@@ -48,7 +48,7 @@ source_technology:
 # ─────────────────────────────────────────────────────────────────────────────
 target_technology:
   runtime: Quarkus
-  quarkus_version: "3.15.1"       # pin to specific stable version
+  quarkus_version: null           # resolved at runtime — set by planning agent (e.g. "3.15.1")
   java_version: "17"              # Quarkus 3.x minimum
   build_tool: null                # inherit from source_technology or set explicitly
   database: null                  # target database
