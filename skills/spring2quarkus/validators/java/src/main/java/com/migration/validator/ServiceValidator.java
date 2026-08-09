@@ -24,7 +24,7 @@ import java.util.stream.Stream;
  *
  * Validates Spring service layer migration to Quarkus CDI beans.
  *
- * Checks 18 validation rules:
+ * Checks 18 validation rules (full migration):
  * 1. No Spring stereotype annotations
  * (@Service, @Component, @Repository, @Autowired)
  * 2. No Spring imports
@@ -44,23 +44,48 @@ import java.util.stream.Stream;
  * 16. @JmsListener migrated to @Incoming
  * 17. Spring scope annotations migrated to CDI
  * 18. Maven compile succeeds
+ *
+ * Compat mode checks (--compat-mode):
+ * C1. quarkus-spring-di extension present
+ * C2. No SpEL @Value("#{…}") remains — property placeholder @Value("${…}") is
+ * bridged and allowed
+ * C3. Spring @Transactional import replaced OR quarkus-spring-tx extension
+ * present (when compat_mode.spring_tx=true)
+ * C4. No unsupported compat annotations (@Primary, @Lazy, @Profile)
+ * C5. Spring @Scheduled import replaced OR quarkus-spring-scheduled extension
+ * present (when compat_mode.spring_scheduled=true)
+ * C6. Maven compile succeeds
  */
 public class ServiceValidator {
 
     private final Path targetDir;
     private final Path specPath;
+    private final boolean compatMode;
     private final ValidationReport report;
     private Map<String, Object> spec;
 
     /**
-     * Constructor with dependency injection.
+     * Constructor with dependency injection (full migration mode).
      *
      * @param targetDir Absolute path to the target Quarkus project root
      * @param specPath  Absolute path to migration-spec.yaml
      */
     public ServiceValidator(Path targetDir, Path specPath) {
+        this(targetDir, specPath, false);
+    }
+
+    /**
+     * Constructor with dependency injection.
+     *
+     * @param targetDir  Absolute path to the target Quarkus project root
+     * @param specPath   Absolute path to migration-spec.yaml
+     * @param compatMode When true, allows Spring DI annotations and checks for
+     *                   quarkus-spring-di extension
+     */
+    public ServiceValidator(Path targetDir, Path specPath, boolean compatMode) {
         this.targetDir = targetDir.toAbsolutePath();
         this.specPath = specPath.toAbsolutePath();
+        this.compatMode = compatMode;
         this.report = new ValidationReport();
     }
 
@@ -77,27 +102,37 @@ public class ServiceValidator {
             // Load migration spec
             spec = YamlUtils.loadYaml(specPath);
 
-            System.out.println("[INFO] Running 18 validation checks for service layer migration\n");
+            if (compatMode) {
+                System.out.println("[INFO] Running compat-mode validation checks (quarkus-spring-di)\n");
+                checkCompatModeExtensionPresent();
+                checkNoSpelValueAnnotations(); // @Value("${…}") bridged; @Value("#{…}") SpEL is not
+                checkCompatTransactional(); // respects compat_mode.spring_tx flag
+                checkCompatScheduled(); // respects compat_mode.spring_scheduled flag
+                checkUnsupportedCompatAnnotations(); // @Primary, @Lazy, @Profile are NOT bridged
+                checkMavenCompile();
+            } else {
+                System.out.println("[INFO] Running 18 validation checks for service layer migration\n");
 
-            // Run all 18 checks
-            checkNoSpringAnnotations();
-            checkNoSpringImports();
-            checkCdiScopesPresent();
-            checkInjectUsage();
-            checkConfigPropertyMigration();
-            checkTransactionalMigration();
-            checkAsyncMigration();
-            checkScheduledMigration();
-            checkNoApplicationContext();
-            checkLifecycleHooks();
-            checkNoSpringConfigClasses();
-            checkNoSpringBeanMethods();
-            checkEventPublisherMigration();
-            checkNoSpringBootAnnotations();
-            checkNoSpringContextUtils();
-            checkJmsListenerMigration();
-            checkScopeAnnotationMigration();
-            checkMavenCompile();
+                // Run all 18 checks
+                checkNoSpringAnnotations();
+                checkNoSpringImports();
+                checkCdiScopesPresent();
+                checkInjectUsage();
+                checkConfigPropertyMigration();
+                checkTransactionalMigration();
+                checkAsyncMigration();
+                checkScheduledMigration();
+                checkNoApplicationContext();
+                checkLifecycleHooks();
+                checkNoSpringConfigClasses();
+                checkNoSpringBeanMethods();
+                checkEventPublisherMigration();
+                checkNoSpringBootAnnotations();
+                checkNoSpringContextUtils();
+                checkJmsListenerMigration();
+                checkScopeAnnotationMigration();
+                checkMavenCompile();
+            }
 
             // Print summary
             printSummary();
@@ -113,6 +148,112 @@ public class ServiceValidator {
                 e.printStackTrace();
             }
             return 1;
+        }
+    }
+
+    private void checkCompatModeExtensionPresent() {
+        String rule = "quarkus-spring-di extension present in pom.xml";
+        System.out.println("[CHECK] " + rule);
+
+        Path pomPath = targetDir.resolve("pom.xml");
+        if (!pomPath.toFile().exists()) {
+            report.fail(rule, "pom.xml not found in project root");
+            return;
+        }
+        try {
+            String pomContent = Files.readString(pomPath);
+            if (pomContent.contains("quarkus-spring-di")) {
+                report.pass(rule, "quarkus-spring-di found in pom.xml");
+            } else {
+                report.fail(rule, "quarkus-spring-di not found in pom.xml — add the dependency for compat mode");
+            }
+        } catch (IOException e) {
+            report.fail(rule, "Error reading pom.xml: " + e.getMessage());
+        }
+    }
+
+    private void checkCompatTransactional() {
+        boolean springTxCompat = Boolean.TRUE.equals(
+                YamlUtils.getValue(spec, "compat_mode.spring_tx"));
+
+        if (springTxCompat) {
+            // quarkus-spring-tx bridges Spring @Transactional — verify extension is present
+            String rule = "quarkus-spring-tx extension present in pom.xml (compat_mode.spring_tx=true)";
+            System.out.println("[CHECK] " + rule);
+            try {
+                String pomContent = Files.readString(targetDir.resolve("pom.xml"));
+                if (pomContent.contains("quarkus-spring-tx")) {
+                    report.pass(rule, "quarkus-spring-tx found in pom.xml");
+                } else {
+                    report.fail(rule,
+                            "compat_mode.spring_tx is true but quarkus-spring-tx is not in pom.xml — add the extension or set spring_tx: false");
+                }
+            } catch (IOException e) {
+                report.fail(rule, "Error reading pom.xml: " + e.getMessage());
+            }
+        } else {
+            // Spring @Transactional import must be replaced with jakarta.transaction
+            checkTransactionalMigration();
+        }
+    }
+
+    private void checkCompatScheduled() {
+        boolean springScheduledCompat = Boolean.TRUE.equals(
+                YamlUtils.getValue(spec, "compat_mode.spring_scheduled"));
+
+        if (springScheduledCompat) {
+            // quarkus-spring-scheduled bridges @Scheduled — verify extension is present
+            String rule = "quarkus-spring-scheduled extension present in pom.xml (compat_mode.spring_scheduled=true)";
+            System.out.println("[CHECK] " + rule);
+            try {
+                String pomContent = Files.readString(targetDir.resolve("pom.xml"));
+                if (pomContent.contains("quarkus-spring-scheduled")) {
+                    report.pass(rule, "quarkus-spring-scheduled found in pom.xml");
+                } else {
+                    report.fail(rule,
+                            "compat_mode.spring_scheduled is true but quarkus-spring-scheduled is not in pom.xml — add the extension or set spring_scheduled: false");
+                }
+            } catch (IOException e) {
+                report.fail(rule, "Error reading pom.xml: " + e.getMessage());
+            }
+        } else {
+            // Spring @Scheduled import must be replaced (or scheduling removed)
+            checkScheduledMigration();
+        }
+    }
+
+    private void checkUnsupportedCompatAnnotations() {
+        String rule = "No unsupported quarkus-spring-di annotations (@Primary, @Lazy, @Profile) remain";
+        System.out.println("[CHECK] " + rule);
+
+        try {
+            List<Path> javaFiles = findJavaFiles(targetDir);
+            List<String> unsupported = Arrays.asList("@Primary", "@Lazy", "@Profile");
+
+            List<String> violations = new ArrayList<>();
+            for (Path file : javaFiles) {
+                String content = Files.readString(file);
+                String activeContent = removeComments(content);
+                for (String annotation : unsupported) {
+                    if (activeContent.contains(annotation)) {
+                        violations.add(file.getFileName().toString() + " (" + annotation + ")");
+                    }
+                }
+            }
+
+            if (violations.isEmpty()) {
+                report.pass(rule, "No unsupported compat annotations found");
+            } else {
+                report.fail(rule, String.format(
+                        "%d unsupported annotation(s) found — quarkus-spring-di silently ignores these causing runtime failures: %s. "
+                                +
+                                "Replace @Primary with @io.quarkus.arc.DefaultBean or @Alternative+@Priority; " +
+                                "remove @Lazy (Quarkus beans are lazy by default); " +
+                                "replace @Profile with @io.quarkus.arc.profile.IfBuildProfile.",
+                        violations.size(), String.join(", ", violations.subList(0, Math.min(5, violations.size())))));
+            }
+        } catch (IOException e) {
+            report.fail(rule, "Error scanning files: " + e.getMessage());
         }
     }
 
@@ -251,6 +392,39 @@ public class ServiceValidator {
                 report.pass(rule, "All @Autowired migrated to @Inject");
             } else {
                 report.fail(rule, String.format("@Autowired in %d files", badFiles.size()));
+            }
+        } catch (IOException e) {
+            report.fail(rule, "Error scanning files: " + e.getMessage());
+        }
+    }
+
+    private void checkNoSpelValueAnnotations() {
+        String rule = "No SpEL @Value(\"#{…}\") expressions remain (property placeholder @Value(\"${…}\") is bridged)";
+        System.out.println("[CHECK] " + rule);
+
+        try {
+            List<Path> javaFiles = findJavaFiles(targetDir);
+            // Match @Value("#{...") — SpEL syntax; property placeholders @Value("${...")
+            // are fine
+            Pattern spelValuePattern = Pattern.compile("@Value\\s*\\(\\s*\"#\\{");
+            List<String> badFiles = new ArrayList<>();
+
+            for (Path file : javaFiles) {
+                String content = Files.readString(file);
+                String activeContent = removeComments(content);
+
+                if (spelValuePattern.matcher(activeContent).find()) {
+                    badFiles.add(file.getFileName().toString());
+                }
+            }
+
+            if (badFiles.isEmpty()) {
+                report.pass(rule,
+                        "No SpEL @Value expressions found — property placeholder @Value is bridged by quarkus-spring-di");
+            } else {
+                report.fail(rule, String.format(
+                        "SpEL @Value(\"#{…}\") in %d file(s): %s — SpEL is not supported by quarkus-spring-di; rewrite to a CDI equivalent.",
+                        badFiles.size(), String.join(", ", badFiles.subList(0, Math.min(3, badFiles.size())))));
             }
         } catch (IOException e) {
             report.fail(rule, "Error scanning files: " + e.getMessage());

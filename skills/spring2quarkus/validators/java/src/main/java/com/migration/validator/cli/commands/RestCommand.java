@@ -34,10 +34,13 @@ public class RestCommand implements Callable<Integer> {
     @Option(names = { "-v", "--verbose" }, description = "Enable verbose output with detailed logging")
     private boolean verbose;
 
+    @Option(names = "--compat-mode", description = "Compat mode: use SpringRestApiExtractor for target project (quarkus-spring-web); endpoint comparison logic is unchanged", defaultValue = "false")
+    private boolean compatMode;
+
     @Override
     public Integer call() throws Exception {
         RestValidator validator = new RestValidator(
-                springMetadata, quarkusMetadata, projectRoot, specPath);
+                springMetadata, quarkusMetadata, projectRoot, specPath, compatMode);
         return validator.validate(verbose);
     }
 }

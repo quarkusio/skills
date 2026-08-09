@@ -3,13 +3,16 @@ package com.migration.validator;
 import com.migration.validator.core.ValidationReport;
 import com.migration.validator.core.YamlUtils;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
-import java.util.regex.Matcher;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * ConfigValidator - Validates configuration migration from Spring Boot to
@@ -17,12 +20,26 @@ import java.util.regex.Pattern;
  * Instance-based validator with constructor injection for better testability
  * and design.
  *
- * Validates:
+ * Full migration mode validates:
  * 1. Spring properties migrated to Quarkus equivalents
  * 2. Property values are compatible
  * 3. No Spring-specific properties remain
- * 4. Profile-specific properties handled correctly
- * 5. Maven compile succeeds
+ * 4. Maven compile succeeds
+ *
+ * Compat mode checks (--compat-mode):
+ * C1. quarkus-spring-di present in pom.xml (when service_layer =
+ * spring-di-compat)
+ * C2. No RestTemplate beans remain (not bridged by quarkus-spring-di)
+ * C3. No SpEL @Value("#{…}") remains — property placeholder @Value("${…}") IS
+ * bridged
+ * C4. quarkus-spring-boot-properties present (when config_properties =
+ * spring-boot-properties-compat)
+ * C5. No Map<K,V> fields in @ConfigurationProperties classes (throws
+ * DeploymentException)
+ * C6. No @ConstructorBinding remains (compat requires no-arg constructor +
+ * setters)
+ * C7. Property migration and no Spring properties checks (always apply)
+ * C8. Maven compile succeeds
  */
 public class ConfigValidator {
 
@@ -31,6 +48,7 @@ public class ConfigValidator {
     private final Path springProject;
     private final Path quarkusProject;
     private final Path specPath;
+    private final boolean compatMode;
 
     // Property mappings from Spring to Quarkus
     private static final Map<String, String> PROPERTY_MAPPINGS = new HashMap<>();
@@ -122,16 +140,30 @@ public class ConfigValidator {
     }
 
     /**
-     * Constructor with dependency injection.
+     * Constructor for full migration mode.
      *
      * @param springProject  Absolute path to the Spring project root
      * @param quarkusProject Absolute path to the Quarkus project root
      * @param specPath       Absolute path to migration-spec.yaml
      */
     public ConfigValidator(Path springProject, Path quarkusProject, Path specPath) {
+        this(springProject, quarkusProject, specPath, false);
+    }
+
+    /**
+     * Constructor with compat mode flag.
+     *
+     * @param springProject  Absolute path to the Spring project root
+     * @param quarkusProject Absolute path to the Quarkus project root
+     * @param specPath       Absolute path to migration-spec.yaml
+     * @param compatMode     When true, runs compat-mode checks instead of full
+     *                       migration checks
+     */
+    public ConfigValidator(Path springProject, Path quarkusProject, Path specPath, boolean compatMode) {
         this.springProject = springProject.toAbsolutePath();
         this.quarkusProject = quarkusProject.toAbsolutePath();
         this.specPath = specPath.toAbsolutePath();
+        this.compatMode = compatMode;
     }
 
     /**
@@ -166,24 +198,260 @@ public class ConfigValidator {
     }
 
     /**
-     * Internal validation method
+     * Internal validation method — dispatches to compat or full path.
      */
     private ValidationReport runValidation() throws IOException {
         ValidationReport report = new ValidationReport();
 
-        // Load Spring properties
+        // Load Spring and Quarkus properties (needed in both modes)
         Map<String, String> springProps = loadSpringProperties(this.springProject);
-
-        // Load Quarkus properties
         Map<String, String> quarkusProps = loadQuarkusProperties(this.quarkusProject);
 
-        // Run validation checks
-        validatePropertyMigration(springProps, quarkusProps, report);
-        validateNoSpringProperties(quarkusProps, report);
+        if (compatMode) {
+            System.out.println("[INFO] Running compat-mode validation checks\n");
+
+            // Load spec to inspect migration_strategy flags
+            Map<String, Object> spec = loadSpec();
+
+            String serviceLayer = stringValue(YamlUtils.getValue(spec, "migration_strategy.service_layer"));
+            String configProperties = stringValue(YamlUtils.getValue(spec, "migration_strategy.config_properties"));
+
+            boolean springDiCompat = "spring-di-compat".equals(serviceLayer);
+            boolean springBootPropertiesCompat = "spring-boot-properties-compat".equals(configProperties);
+
+            // C1 — quarkus-spring-di must be present when service_layer = spring-di-compat
+            if (springDiCompat) {
+                checkExtensionPresent("quarkus-spring-di",
+                        "service_layer = spring-di-compat", report);
+            }
+
+            // C2 — RestTemplate is a Spring Web concern; no compat bridge exists
+            checkNoRestTemplateBeans(report);
+
+            // C3 — SpEL @Value("#{…}") is NOT bridged; property placeholder @Value("${…}")
+            // IS bridged
+            checkNoSpelValueAnnotations(report);
+
+            // C4 — quarkus-spring-boot-properties must be present when config_properties =
+            // spring-boot-properties-compat
+            if (springBootPropertiesCompat) {
+                checkExtensionPresent("quarkus-spring-boot-properties",
+                        "config_properties = spring-boot-properties-compat", report);
+
+                // C5 — Map<K,V> fields in @ConfigurationProperties throw DeploymentException
+                checkNoMapFieldsInConfigurationProperties(report);
+
+                // C6 — @ConstructorBinding requires no-arg constructor + setters with compat
+                // extension
+                checkNoConstructorBinding(report);
+            }
+
+            // Property migration and Spring properties checks still apply in compat mode
+            validatePropertyMigration(springProps, quarkusProps, report);
+            validateNoSpringProperties(quarkusProps, report);
+
+        } else {
+            System.out.println("[INFO] Running full migration validation checks\n");
+
+            validatePropertyMigration(springProps, quarkusProps, report);
+            validateNoSpringProperties(quarkusProps, report);
+        }
+
+        // Maven compile always checked last
         validateMavenCompile(report);
 
         return report;
     }
+
+    // -----------------------------------------------------------------------
+    // Compat-mode checks
+    // -----------------------------------------------------------------------
+
+    /**
+     * Verify that a required compat extension is present in pom.xml.
+     */
+    private void checkExtensionPresent(String artifactId, String reason, ValidationReport report) {
+        String rule = artifactId + " present in pom.xml (" + reason + ")";
+        System.out.println("[CHECK] " + rule);
+
+        Path pomPath = quarkusProject.resolve("pom.xml");
+        if (!pomPath.toFile().exists()) {
+            report.fail(rule, "pom.xml not found in project root");
+            return;
+        }
+        try {
+            String pomContent = Files.readString(pomPath);
+            if (pomContent.contains(artifactId)) {
+                report.pass(rule, artifactId + " found in pom.xml");
+            } else {
+                report.fail(rule, artifactId + " not found in pom.xml — add the extension for compat mode");
+            }
+        } catch (IOException e) {
+            report.fail(rule, "Error reading pom.xml: " + e.getMessage());
+        }
+    }
+
+    /**
+     * C2 — RestTemplate beans must be replaced with JAX-RS Client or MicroProfile
+     * REST Client.
+     * quarkus-spring-di does NOT bridge RestTemplate (it is a Spring Web concern,
+     * not DI).
+     */
+    private void checkNoRestTemplateBeans(ValidationReport report) {
+        String rule = "No RestTemplate @Bean methods remain (not bridged by quarkus-spring-di)";
+        System.out.println("[CHECK] " + rule);
+
+        try {
+            List<Path> javaFiles = findJavaFiles(quarkusProject);
+            // Match @Bean methods that return RestTemplate
+            Pattern restTemplateBeanPattern = Pattern.compile(
+                    "@Bean[^;{]*\\n[^;{]*RestTemplate\\s+\\w+\\s*\\(");
+            // Also catch inline: @Bean public RestTemplate ...
+            Pattern inlinePattern = Pattern.compile(
+                    "@Bean\\b.*\\bRestTemplate\\b");
+
+            List<String> violations = new ArrayList<>();
+            for (Path file : javaFiles) {
+                String content = Files.readString(file);
+                String activeContent = removeComments(content);
+                if (restTemplateBeanPattern.matcher(activeContent).find()
+                        || inlinePattern.matcher(activeContent).find()) {
+                    violations.add(file.getFileName().toString());
+                }
+            }
+
+            if (violations.isEmpty()) {
+                report.pass(rule, "No RestTemplate @Bean methods found");
+            } else {
+                report.fail(rule, String.format(
+                        "RestTemplate @Bean in %d file(s): %s — replace with jakarta.ws.rs.client.Client or a @RegisterRestClient interface.",
+                        violations.size(),
+                        String.join(", ", violations.subList(0, Math.min(3, violations.size())))));
+            }
+        } catch (IOException e) {
+            report.fail(rule, "Error scanning files: " + e.getMessage());
+        }
+    }
+
+    /**
+     * C3 — SpEL @Value("#{…}") is not bridged; property placeholder @Value("${…}")
+     * IS bridged.
+     */
+    private void checkNoSpelValueAnnotations(ValidationReport report) {
+        String rule = "No SpEL @Value(\"#{…}\") expressions remain (property placeholder @Value(\"${…}\") is bridged)";
+        System.out.println("[CHECK] " + rule);
+
+        try {
+            List<Path> javaFiles = findJavaFiles(quarkusProject);
+            Pattern spelPattern = Pattern.compile("@Value\\s*\\(\\s*\"#\\{");
+            List<String> violations = new ArrayList<>();
+
+            for (Path file : javaFiles) {
+                String content = Files.readString(file);
+                if (spelPattern.matcher(removeComments(content)).find()) {
+                    violations.add(file.getFileName().toString());
+                }
+            }
+
+            if (violations.isEmpty()) {
+                report.pass(rule,
+                        "No SpEL @Value expressions found — property placeholder @Value is bridged by quarkus-spring-di");
+            } else {
+                report.fail(rule, String.format(
+                        "SpEL @Value(\"#{…}\") in %d file(s): %s — SpEL is not supported; rewrite to a CDI equivalent.",
+                        violations.size(),
+                        String.join(", ", violations.subList(0, Math.min(3, violations.size())))));
+            }
+        } catch (IOException e) {
+            report.fail(rule, "Error scanning files: " + e.getMessage());
+        }
+    }
+
+    /**
+     * C5 — Map&lt;K,V&gt; fields in @ConfigurationProperties classes cause a
+     * DeploymentException
+     * at startup when quarkus-spring-boot-properties is used; they must be replaced
+     * with a
+     * 
+     * @ConfigMapping interface that exposes Map&lt;String, String&gt;.
+     */
+    private void checkNoMapFieldsInConfigurationProperties(ValidationReport report) {
+        String rule = "No Map<K,V> fields in @ConfigurationProperties classes (causes DeploymentException with compat extension)";
+        System.out.println("[CHECK] " + rule);
+
+        try {
+            List<Path> javaFiles = findJavaFiles(quarkusProject);
+            Pattern configPropsPattern = Pattern.compile("@ConfigurationProperties\\b");
+            // Match Map<…> as a field declaration: access modifier (or @…\n) followed by
+            // Map<
+            // e.g. "private Map<String, String> labels" or " Map<String, String> labels"
+            // Does NOT match method return types (those are preceded by a modifier on the
+            // same line)
+            // Uses DOTALL so \s covers newlines.
+            Pattern mapFieldPattern = Pattern.compile(
+                    "(?:private|protected|public|@\\w+[^;{]*\\n)\\s+(?:final\\s+)?Map\\s*<",
+                    Pattern.DOTALL);
+            List<String> violations = new ArrayList<>();
+
+            for (Path file : javaFiles) {
+                String content = Files.readString(file);
+                String activeContent = removeComments(content);
+                if (configPropsPattern.matcher(activeContent).find()
+                        && mapFieldPattern.matcher(activeContent).find()) {
+                    violations.add(file.getFileName().toString());
+                }
+            }
+
+            if (violations.isEmpty()) {
+                report.pass(rule, "No Map fields found in @ConfigurationProperties classes");
+            } else {
+                report.fail(rule, String.format(
+                        "Map<K,V> field(s) in @ConfigurationProperties class in %d file(s): %s — replace with a @ConfigMapping interface exposing Map<String, String>.",
+                        violations.size(),
+                        String.join(", ", violations.subList(0, Math.min(3, violations.size())))));
+            }
+        } catch (IOException e) {
+            report.fail(rule, "Error scanning files: " + e.getMessage());
+        }
+    }
+
+    /**
+     * C6 — @ConstructorBinding is not supported by quarkus-spring-boot-properties
+     * compat.
+     * The extension requires a no-arg constructor + setter methods.
+     */
+    private void checkNoConstructorBinding(ValidationReport report) {
+        String rule = "No @ConstructorBinding remains (quarkus-spring-boot-properties compat requires no-arg constructor + setters)";
+        System.out.println("[CHECK] " + rule);
+
+        try {
+            List<Path> javaFiles = findJavaFiles(quarkusProject);
+            Pattern constructorBindingPattern = Pattern.compile("@ConstructorBinding\\b");
+            List<String> violations = new ArrayList<>();
+
+            for (Path file : javaFiles) {
+                String content = Files.readString(file);
+                if (constructorBindingPattern.matcher(removeComments(content)).find()) {
+                    violations.add(file.getFileName().toString());
+                }
+            }
+
+            if (violations.isEmpty()) {
+                report.pass(rule, "No @ConstructorBinding found");
+            } else {
+                report.fail(rule, String.format(
+                        "@ConstructorBinding in %d file(s): %s — remove @ConstructorBinding and add a no-arg constructor with setter methods.",
+                        violations.size(),
+                        String.join(", ", violations.subList(0, Math.min(3, violations.size())))));
+            }
+        } catch (IOException e) {
+            report.fail(rule, "Error scanning files: " + e.getMessage());
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Shared checks (both modes)
+    // -----------------------------------------------------------------------
 
     /**
      * Load Spring Boot properties from application.properties
@@ -384,7 +652,6 @@ public class ConfigValidator {
         }
 
         // Duration equivalence (milliseconds to duration format)
-        // Spring: 5000 (ms) -> Quarkus: 5S (seconds)
         if (isDuration(value2)) {
             try {
                 long millis1 = Long.parseLong(value1);
@@ -428,7 +695,7 @@ public class ConfigValidator {
     }
 
     /**
-     * Parse duration string to milliseconds
+     * Parse duration string to milliseconds.
      * Supports: ms (milliseconds), s (seconds), m (minutes), h (hours), d (days)
      */
     private long parseDuration(String duration) {
@@ -485,25 +752,87 @@ public class ConfigValidator {
      * Validate Maven compile succeeds
      */
     private void validateMavenCompile(ValidationReport report) {
+        String rule = "Maven compile succeeds";
+        System.out.println("[CHECK] " + rule);
+
         try {
             ProcessBuilder pb = new ProcessBuilder("mvn", "clean", "compile", "-q");
             pb.directory(this.quarkusProject.toFile());
             pb.redirectErrorStream(true);
 
             Process process = pb.start();
-            int exitCode = process.waitFor();
+            StringBuilder output = new StringBuilder();
 
-            if (exitCode == 0) {
-                report.pass("maven_compile", "Maven compile successful");
-            } else {
-                report.fail("maven_compile", "Maven compile failed. Fix compilation errors.");
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    output.append(line).append("\n");
+                }
             }
 
-        } catch (Exception e) {
-            report.fail("maven_compile",
-                    "Maven compile check failed: " + e.getMessage() +
-                            ". Ensure Maven is installed and project is valid.");
+            boolean finished = process.waitFor(300, TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                report.fail(rule, "Maven compile timed out after 300 seconds");
+                return;
+            }
+
+            int exitCode = process.exitValue();
+            if (exitCode == 0) {
+                report.pass(rule, "Maven compile successful");
+            } else {
+                String errorSnippet = output.toString().lines()
+                        .filter(l -> l.contains("ERROR"))
+                        .limit(3)
+                        .collect(Collectors.joining("\n  "));
+                report.fail(rule, "Maven compile failed:\n  " + errorSnippet);
+            }
+
+        } catch (IOException e) {
+            if (e.getMessage() != null && e.getMessage().contains("Cannot run program \"mvn\"")) {
+                report.fail(rule, "Maven (mvn) not found in PATH");
+            } else {
+                report.fail(rule, "Error running Maven: " + (e.getMessage() != null ? e.getMessage() : e.toString()));
+            }
+        } catch (InterruptedException e) {
+            report.fail(rule, "Maven process interrupted: " + e.getMessage());
+            Thread.currentThread().interrupt();
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // Helpers
+    // -----------------------------------------------------------------------
+
+    private Map<String, Object> loadSpec() {
+        try {
+            return YamlUtils.loadYaml(specPath);
+        } catch (IOException e) {
+            System.err.println("[WARNING] Could not load spec for compat-mode flags: " + e.getMessage());
+            return new HashMap<>();
+        }
+    }
+
+    private String stringValue(Object value) {
+        return value instanceof String ? (String) value : "";
+    }
+
+    private List<Path> findJavaFiles(Path baseDir) throws IOException {
+        try (Stream<Path> paths = Files.walk(baseDir)) {
+            return paths
+                    .filter(Files::isRegularFile)
+                    .filter(p -> p.toString().endsWith(".java"))
+                    .collect(Collectors.toList());
+        }
+    }
+
+    private String removeComments(String content) {
+        // Remove single-line comments
+        content = content.replaceAll("//[^\n]*", "");
+        // Remove multi-line comments
+        content = content.replaceAll("/\\*.*?\\*/", "");
+        return content;
     }
 
     @SuppressWarnings("unchecked")

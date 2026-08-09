@@ -11,6 +11,7 @@ public class ValidationReport {
     private final List<Evidence> evidenceList = new ArrayList<>();
     private int passed = 0;
     private int failed = 0;
+    private int warned = 0;
 
     /**
      * Record a passed validation check.
@@ -32,6 +33,17 @@ public class ValidationReport {
     public void fail(String rule, String evidence) {
         evidenceList.add(new Evidence(rule, false, evidence));
         failed++;
+    }
+
+    /**
+     * Record a non-blocking warning.
+     *
+     * @param rule     Rule name/identifier
+     * @param evidence Evidence or description of the warning
+     */
+    public void warn(String rule, String evidence) {
+        evidenceList.add(new Evidence(rule, false, evidence, true));
+        warned++;
     }
 
     /**
@@ -81,6 +93,13 @@ public class ValidationReport {
     }
 
     /**
+     * Get number of warnings.
+     */
+    public int getWarned() {
+        return warned;
+    }
+
+    /**
      * Get all evidence records.
      */
     public List<Evidence> getEvidenceList() {
@@ -100,10 +119,10 @@ public class ValidationReport {
         System.out.println(separator);
         System.out.println("Status  : " + getStatus().toUpperCase());
         System.out.println("Rules   : " + getTotal() + " total  |  " +
-                passed + " passed  |  " + failed + " failed\n");
+                passed + " passed  |  " + failed + " failed  |  " + warned + " warnings\n");
 
         for (Evidence e : evidenceList) {
-            String mark = e.passed ? "✓" : "✗";
+            String mark = e.passed ? "✓" : (e.warning ? "⚠" : "✗");
             System.out.println("  " + mark + " " + e.rule);
 
             // Indent multi-line evidence
@@ -129,12 +148,15 @@ public class ValidationReport {
         result.put("rules_total", getTotal());
         result.put("rules_passed", passed);
         result.put("rules_failed", failed);
+        result.put("rules_warned", warned);
 
         List<Map<String, Object>> evidenceMapList = new ArrayList<>();
         for (Evidence e : evidenceList) {
             Map<String, Object> evidenceMap = new HashMap<>();
             evidenceMap.put("rule", e.rule);
             evidenceMap.put("passed", e.passed);
+            if (e.warning)
+                evidenceMap.put("warning", true);
             evidenceMap.put("evidence", e.evidence);
             evidenceMapList.add(evidenceMap);
         }
@@ -149,11 +171,18 @@ public class ValidationReport {
     public static class Evidence {
         public final String rule;
         public final boolean passed;
+        public final boolean warning;
         public final String evidence;
 
+        /** Backward-compatible constructor (non-warning). */
         public Evidence(String rule, boolean passed, String evidence) {
+            this(rule, passed, evidence, false);
+        }
+
+        public Evidence(String rule, boolean passed, String evidence, boolean warning) {
             this.rule = rule;
             this.passed = passed;
+            this.warning = warning;
             this.evidence = evidence;
         }
 
@@ -163,6 +192,10 @@ public class ValidationReport {
 
         public boolean isPassed() {
             return passed;
+        }
+
+        public boolean isWarning() {
+            return warning;
         }
 
         public String getEvidence() {

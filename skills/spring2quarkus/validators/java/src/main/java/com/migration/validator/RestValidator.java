@@ -3,11 +3,15 @@ package com.migration.validator;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.migration.validator.extractor.generate.SpringRestApiExtractor;
 import com.migration.validator.model.RestModels.*;
+import com.migration.validator.model.cldk.AnalysisResult;
+import com.migration.validator.core.CodeAnalyzerClient;
 import com.migration.validator.core.ValidationReport;
 import com.migration.validator.core.YamlUtils;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -48,9 +52,10 @@ public class RestValidator {
     private final Path quarkusMetadataPath;
     private final Path projectRoot;
     private final Path specPath;
+    private final boolean compatMode;
 
     /**
-     * Constructor with dependency injection.
+     * Constructor with dependency injection (full migration mode).
      *
      * @param springMetadata  Path to Spring project code-metadata.yaml
      * @param quarkusMetadata Path to Quarkus project code-metadata.yaml
@@ -59,10 +64,28 @@ public class RestValidator {
      */
     public RestValidator(Path springMetadata, Path quarkusMetadata,
             Path projectRoot, Path specPath) {
+        this(springMetadata, quarkusMetadata, projectRoot, specPath, false);
+    }
+
+    /**
+     * Constructor with dependency injection.
+     *
+     * @param springMetadata  Path to Spring project code-metadata.yaml
+     * @param quarkusMetadata Path to Quarkus project code-metadata.yaml
+     * @param projectRoot     Absolute path to the target Quarkus project root
+     * @param specPath        Absolute path to migration-spec.yaml
+     * @param compatMode      When true, uses SpringRestApiExtractor for the target
+     *                        project
+     *                        (controllers kept as Spring MVC via
+     *                        quarkus-spring-web)
+     */
+    public RestValidator(Path springMetadata, Path quarkusMetadata,
+            Path projectRoot, Path specPath, boolean compatMode) {
         this.springMetadataPath = springMetadata.toAbsolutePath();
         this.quarkusMetadataPath = quarkusMetadata.toAbsolutePath();
         this.projectRoot = projectRoot.toAbsolutePath();
         this.specPath = specPath.toAbsolutePath();
+        this.compatMode = compatMode;
     }
 
     /**
@@ -102,12 +125,20 @@ public class RestValidator {
     private ValidationReport runValidation() throws IOException {
         ValidationReport report = new ValidationReport();
 
-        // Load metadata
+        // Load Spring-side metadata (always from the YAML file)
         CodeMetadata springMetadata = loadMetadata(springMetadataPath);
-        CodeMetadata quarkusMetadata = loadMetadata(quarkusMetadataPath);
-
         RestModel springRest = springMetadata.getRest();
-        RestModel quarkusRest = quarkusMetadata.getRest();
+
+        // In compat mode the Quarkus target still uses Spring MVC annotations,
+        // so we re-extract the target REST model using SpringRestApiExtractor
+        // rather than reading the pre-generated Quarkus metadata YAML.
+        RestModel quarkusRest;
+        if (compatMode) {
+            quarkusRest = extractSpringRestFromTarget();
+        } else {
+            CodeMetadata quarkusMetadata = loadMetadata(quarkusMetadataPath);
+            quarkusRest = quarkusMetadata.getRest();
+        }
 
         if (springRest == null || quarkusRest == null) {
             report.fail("rest_metadata_exists",
@@ -116,12 +147,167 @@ public class RestValidator {
             return report;
         }
 
-        // Run validation checks
+        // Run validation checks — endpoint comparison logic is identical in both modes
         validateApiCount(springRest, quarkusRest, report);
         validateEndpointMigration(springRest, quarkusRest, report);
+        if (compatMode) {
+            validateCompatModeRequirements(report);
+        }
         validateMavenCompile(report);
 
         return report;
+    }
+
+    /**
+     * Re-extract the REST model from the target project using
+     * SpringRestApiExtractor.
+     * Used in compat mode where the target still has Spring MVC annotations.
+     */
+    private RestModel extractSpringRestFromTarget() throws IOException {
+        try {
+            CodeAnalyzerClient client = new CodeAnalyzerClient();
+            AnalysisResult analysis = client.analyzeProject(projectRoot, 1);
+            SpringRestApiExtractor extractor = new SpringRestApiExtractor();
+            return extractor.extract(analysis, projectRoot, Collections.emptyMap());
+        } catch (Exception e) {
+            // Fall back to the pre-generated metadata YAML if live extraction fails
+            System.err.println("[WARN] SpringRestApiExtractor failed (" + e.getMessage() +
+                    "), falling back to quarkus metadata YAML");
+            CodeMetadata quarkusMetadata = loadMetadata(quarkusMetadataPath);
+            return quarkusMetadata.getRest();
+        }
+    }
+
+    /**
+     * Compat-mode specific checks (runs only when {@code --compat-mode} is set).
+     * <ol>
+     * <li>FAIL — {@code quarkus-spring-web} missing from pom.xml</li>
+     * <li>FAIL — plain {@code @Controller} classes present (not bridged)</li>
+     * <li>FAIL — {@code RestTemplate} / {@code RestClient} usage (not bridged)</li>
+     * <li>WARN — {@code @ControllerAdvice} (partially supported)</li>
+     * <li>WARN — {@code HandlerInterceptor} / {@code WebMvcConfigurer} (not
+     * bridged)</li>
+     * </ol>
+     */
+    private void validateCompatModeRequirements(ValidationReport report) {
+        checkSpringWebExtension(report);
+        SourceScanResult scan = scanSourceFiles();
+        reportSourceFindings(report, scan);
+    }
+
+    /** Check 1 — quarkus-spring-web declared in pom.xml. */
+    private void checkSpringWebExtension(ValidationReport report) {
+        Path pomXml = projectRoot.resolve("pom.xml");
+        try {
+            String pom = new String(Files.readAllBytes(pomXml));
+            if (pom.contains("quarkus-spring-web")) {
+                report.pass("compat_spring_web_extension",
+                        "quarkus-spring-web extension is present in pom.xml");
+            } else {
+                report.fail("compat_spring_web_extension",
+                        "quarkus-spring-web extension is missing from pom.xml. " +
+                                "Add: <artifactId>quarkus-spring-web</artifactId>");
+            }
+        } catch (IOException e) {
+            report.fail("compat_spring_web_extension",
+                    "Could not read pom.xml: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Walk src/main/java once and bucket each file into the relevant finding lists.
+     * Returns an empty result (no failures, no warnings) if the source directory
+     * does not exist.
+     */
+    private SourceScanResult scanSourceFiles() {
+        SourceScanResult result = new SourceScanResult();
+        Path srcMain = projectRoot.resolve("src/main/java");
+        if (!Files.exists(srcMain))
+            return result;
+
+        try {
+            for (Path p : (Iterable<Path>) Files.walk(srcMain).filter(p -> p.toString().endsWith(".java"))::iterator) {
+                String content = new String(Files.readAllBytes(p));
+                String rel = projectRoot.relativize(p).toString();
+
+                if (hasPlainController(content))
+                    result.plainControllers.add(rel);
+                if (content.contains("RestTemplate") || content.contains("RestClient"))
+                    result.restClients.add(rel);
+                if (content.contains("@ControllerAdvice"))
+                    result.controllerAdvice.add(rel);
+                if (content.contains("HandlerInterceptor") || content.contains("WebMvcConfigurer"))
+                    result.interceptors.add(rel);
+            }
+        } catch (IOException e) {
+            result.scanError = e.getMessage();
+        }
+        return result;
+    }
+
+    /** Report the findings from the source scan into the validation report. */
+    private void reportSourceFindings(ValidationReport report, SourceScanResult scan) {
+        if (scan.scanError != null) {
+            report.warn("compat_source_scan", "Could not fully scan source files: " + scan.scanError);
+        }
+
+        // Check 2 — plain @Controller
+        if (scan.plainControllers.isEmpty()) {
+            report.pass("compat_no_plain_controller",
+                    "No plain @Controller classes found (quarkus-spring-web only bridges @RestController)");
+        } else {
+            report.fail("compat_no_plain_controller",
+                    "Plain @Controller classes found — not bridged by quarkus-spring-web (will silently not work at runtime):\n  - "
+                            +
+                            String.join("\n  - ", scan.plainControllers) +
+                            "\nEither annotate with @RestController (if JSON API) or migrate to @Path + TemplateInstance (if template).");
+        }
+
+        // Check 3 — RestTemplate / RestClient
+        if (scan.restClients.isEmpty()) {
+            report.pass("compat_no_rest_client", "No RestTemplate / RestClient usage found");
+        } else {
+            report.fail("compat_no_rest_client",
+                    "RestTemplate / RestClient usage found — not bridged by quarkus-spring-web (ClassNotFoundException at runtime):\n  - "
+                            +
+                            String.join("\n  - ", scan.restClients) +
+                            "\nMigrate to JAX-RS Client or MicroProfile REST Client.");
+        }
+
+        // Warning 4 — @ControllerAdvice
+        if (!scan.controllerAdvice.isEmpty()) {
+            report.warn("compat_controller_advice",
+                    "@ControllerAdvice usage found — only partially supported by quarkus-spring-web. " +
+                            "Verify runtime behaviour or migrate to JAX-RS @Provider ExceptionMapper:\n  - " +
+                            String.join("\n  - ", scan.controllerAdvice));
+        }
+
+        // Warning 5 — HandlerInterceptor / WebMvcConfigurer
+        if (!scan.interceptors.isEmpty()) {
+            report.warn("compat_interceptor",
+                    "HandlerInterceptor / WebMvcConfigurer usage found — not bridged by quarkus-spring-web. " +
+                            "Migrate to JAX-RS ContainerRequestFilter or Quarkus HttpServerOptions:\n  - " +
+                            String.join("\n  - ", scan.interceptors));
+        }
+    }
+
+    /** Holds per-category file lists gathered during a single source-tree walk. */
+    private static class SourceScanResult {
+        final List<String> plainControllers = new ArrayList<>();
+        final List<String> restClients = new ArrayList<>();
+        final List<String> controllerAdvice = new ArrayList<>();
+        final List<String> interceptors = new ArrayList<>();
+        String scanError = null;
+    }
+
+    /**
+     * Returns true when a file contains a plain {@code @Controller} annotation
+     * but not {@code @RestController} (which is a superset annotation).
+     */
+    private boolean hasPlainController(String content) {
+        if (!content.contains("@Controller"))
+            return false;
+        return content.replace("@RestController", "").contains("@Controller");
     }
 
     /**

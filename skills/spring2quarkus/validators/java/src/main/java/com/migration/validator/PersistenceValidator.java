@@ -29,9 +29,10 @@ public class PersistenceValidator {
     private final Path quarkusMetadataPath;
     private final Path projectRoot;
     private final Path specPath;
+    private final boolean compatMode;
 
     /**
-     * Constructor with dependency injection.
+     * Constructor with dependency injection (full migration mode).
      *
      * @param springMetadata  Path to Spring project code-metadata.yaml
      * @param quarkusMetadata Path to Quarkus project code-metadata.yaml
@@ -40,10 +41,26 @@ public class PersistenceValidator {
      */
     public PersistenceValidator(Path springMetadata, Path quarkusMetadata,
             Path projectRoot, Path specPath) {
+        this(springMetadata, quarkusMetadata, projectRoot, specPath, false);
+    }
+
+    /**
+     * Constructor with dependency injection.
+     *
+     * @param springMetadata  Path to Spring project code-metadata.yaml
+     * @param quarkusMetadata Path to Quarkus project code-metadata.yaml
+     * @param projectRoot     Absolute path to the target Quarkus project root
+     * @param specPath        Absolute path to migration-spec.yaml
+     * @param compatMode      When true, skips Panache checks and verifies
+     *                        quarkus-spring-data-jpa instead
+     */
+    public PersistenceValidator(Path springMetadata, Path quarkusMetadata,
+            Path projectRoot, Path specPath, boolean compatMode) {
         this.springMetadataPath = springMetadata.toAbsolutePath();
         this.quarkusMetadataPath = quarkusMetadata.toAbsolutePath();
         this.projectRoot = projectRoot.toAbsolutePath();
         this.specPath = specPath.toAbsolutePath();
+        this.compatMode = compatMode;
     }
 
     /**
@@ -77,11 +94,21 @@ public class PersistenceValidator {
             ValidationReport report = new ValidationReport();
 
             System.out.println("[INFO] Running validation rules for persistence-migration phase\n");
+            if (compatMode) {
+                System.out.println("[INFO] Mode: compat (quarkus-spring-data-jpa)\n");
+            }
 
             // Run validation rules
             validateEntityCount(springMetadata, quarkusMetadata, report);
             validateEntities(springMetadata, quarkusMetadata, report);
-            validateRepositories(springMetadata, quarkusMetadata, report);
+            if (compatMode) {
+                validateCompatModeExtensionPresent(report);
+                validateCompatModeSpringTxPresent(spec, report);
+                System.out.println(
+                        "[INFO] Repository validation skipped (compat mode — JpaRepository interfaces preserved)\n");
+            } else {
+                validateRepositories(springMetadata, quarkusMetadata, report);
+            }
             validatePersistenceConfig(springMetadata, quarkusMetadata, report);
             checkMavenCompile(report);
 
@@ -432,6 +459,78 @@ public class PersistenceValidator {
                 report.pass(spring.getClassName() + " relationship",
                         String.format("Relationship %s validated successfully", relId));
             }
+        }
+    }
+
+    private void validateCompatModeExtensionPresent(ValidationReport report) {
+        String rule = "quarkus-spring-data-jpa extension present in pom.xml";
+        System.out.println("[RULE] " + rule);
+
+        Path pomPath = projectRoot.resolve("pom.xml");
+        if (!pomPath.toFile().exists()) {
+            report.fail(rule, "pom.xml not found in project root");
+            System.out.println("  ✗ pom.xml not found\n");
+            return;
+        }
+        try {
+            String pomContent = new String(java.nio.file.Files.readAllBytes(pomPath));
+            if (pomContent.contains("quarkus-spring-data-jpa")) {
+                report.pass(rule, "quarkus-spring-data-jpa found in pom.xml");
+                System.out.println("  ✓ quarkus-spring-data-jpa found in pom.xml\n");
+            } else {
+                report.fail(rule, "quarkus-spring-data-jpa not found in pom.xml — add the dependency for compat mode");
+                System.out.println("  ✗ quarkus-spring-data-jpa not found in pom.xml\n");
+            }
+        } catch (IOException e) {
+            report.fail(rule, "Error reading pom.xml: " + e.getMessage());
+            System.out.println("  ✗ Error reading pom.xml\n");
+        }
+    }
+
+    /**
+     * When compat_mode.spring_tx = true in the spec, verify that quarkus-spring-tx
+     * is present
+     * in pom.xml so that Spring @Transactional imports are bridged at runtime.
+     */
+    @SuppressWarnings("unchecked")
+    private void validateCompatModeSpringTxPresent(Map<String, Object> spec, ValidationReport report) {
+        // Read compat_mode.spring_tx from spec
+        boolean springTxRequired = false;
+        try {
+            Object compatModeObj = spec.get("compat_mode");
+            if (compatModeObj instanceof Map) {
+                Object flag = ((Map<String, Object>) compatModeObj).get("spring_tx");
+                springTxRequired = Boolean.TRUE.equals(flag);
+            }
+        } catch (Exception e) {
+            // malformed spec — treat as not required
+        }
+
+        if (!springTxRequired) {
+            System.out.println("[INFO] quarkus-spring-tx check skipped (compat_mode.spring_tx is not true in spec)\n");
+            return;
+        }
+
+        String rule = "quarkus-spring-tx extension present in pom.xml (compat_mode.spring_tx=true)";
+        System.out.println("[RULE] " + rule);
+
+        Path pomPath = projectRoot.resolve("pom.xml");
+        try {
+            String pomContent = new String(java.nio.file.Files.readAllBytes(pomPath));
+            if (pomContent.contains("quarkus-spring-tx")) {
+                report.pass(rule, "quarkus-spring-tx found in pom.xml");
+                System.out.println("  ✓ quarkus-spring-tx found in pom.xml\n");
+            } else {
+                report.fail(rule,
+                        "quarkus-spring-tx not found in pom.xml — required because compat_mode.spring_tx=true. " +
+                                "Either add the dependency or migrate @Transactional imports to jakarta.transaction.Transactional "
+                                +
+                                "and set compat_mode.spring_tx=false");
+                System.out.println("  ✗ quarkus-spring-tx not found in pom.xml\n");
+            }
+        } catch (IOException e) {
+            report.fail(rule, "Error reading pom.xml: " + e.getMessage());
+            System.out.println("  ✗ Error reading pom.xml\n");
         }
     }
 

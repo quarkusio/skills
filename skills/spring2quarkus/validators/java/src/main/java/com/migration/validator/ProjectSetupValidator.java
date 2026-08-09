@@ -18,16 +18,20 @@ public class ProjectSetupValidator {
 
     private final Path projectRoot;
     private final Path specPath;
+    private final boolean compatMode;
 
     /**
      * Constructor with dependency injection.
      *
      * @param projectRoot Absolute path to the target Quarkus project root
      * @param specPath    Absolute path to migration-spec.yaml
+     * @param compatMode  When true, the migration uses Spring compatibility
+     *                    extensions
      */
-    public ProjectSetupValidator(Path projectRoot, Path specPath) {
+    public ProjectSetupValidator(Path projectRoot, Path specPath, boolean compatMode) {
         this.projectRoot = projectRoot.toAbsolutePath();
         this.specPath = specPath.toAbsolutePath();
+        this.compatMode = compatMode;
     }
 
     /**
@@ -42,6 +46,7 @@ public class ProjectSetupValidator {
             System.out.println("verify_project_setup.py — project-bootstrap phase (Spring to Quarkus)");
             System.out.println("Project root : " + projectRoot);
             System.out.println("Spec file    : " + specPath);
+            System.out.println("Compat mode  : " + compatMode);
             System.out.println("=".repeat(70) + "\n");
 
             // Load spec
@@ -155,7 +160,10 @@ public class ProjectSetupValidator {
     }
 
     private void checkNoSpringDependencies(ValidationReport report) {
-        System.out.println("[RULE] No Spring Framework dependencies (org.springframework.*) in pom.xml");
+        String ruleDescription = compatMode
+                ? "No direct Spring Framework dependencies (org.springframework.*) in pom.xml — quarkus-spring-* extensions provide them transitively"
+                : "No Spring Framework dependencies (org.springframework.*) in pom.xml";
+        System.out.println("[RULE] " + ruleDescription);
         try {
             Path pomPath = projectRoot.resolve("pom.xml");
             if (!Files.exists(pomPath)) {
@@ -166,7 +174,10 @@ public class ProjectSetupValidator {
 
             String content = Files.readString(pomPath);
 
-            // Find Spring dependencies (excluding spring-boot which is checked separately)
+            // Find Spring Framework dependencies declared directly in pom.xml.
+            // In compat mode, Spring Framework jars are provided transitively by
+            // quarkus-spring-* extensions — they must never be declared explicitly.
+            // The check is identical in both modes; only the error message differs.
             Pattern pattern = Pattern.compile("<groupId>(org\\.springframework(?!\\.boot)[^<]*)</groupId>",
                     Pattern.CASE_INSENSITIVE);
             Matcher matcher = pattern.matcher(content);
@@ -177,12 +188,18 @@ public class ProjectSetupValidator {
             }
 
             if (springDeps.isEmpty()) {
-                report.pass("No Spring dependencies", "No Spring Framework dependencies found in pom.xml");
-                System.out.println("  ✓ No Spring Framework dependencies found in pom.xml\n");
+                String evidence = compatMode
+                        ? "No explicit Spring Framework dependencies in pom.xml (quarkus-spring-* extensions provide them transitively)"
+                        : "No Spring Framework dependencies found in pom.xml";
+                report.pass("No Spring dependencies", evidence);
+                System.out.println("  ✓ " + evidence + "\n");
             } else {
                 List<String> depsList = new ArrayList<>(springDeps);
                 String deps = String.join(", ", depsList.subList(0, Math.min(5, depsList.size())));
-                String evidence = "Spring dependencies found: " + deps;
+                String evidence = compatMode
+                        ? "Explicit Spring Framework dependencies found (remove them — quarkus-spring-* bridges provide these transitively): "
+                                + deps
+                        : "Spring dependencies found: " + deps;
                 report.fail("No Spring dependencies", evidence);
                 System.out.println("  ✗ " + evidence + "\n");
             }
@@ -346,7 +363,6 @@ public class ProjectSetupValidator {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private void checkExtensions(Map<String, Object> spec, ValidationReport report) {
         System.out.println(
                 "[RULE] quarkus- extensions are present (e.g. quarkus-rest-jackson, quarkus-hibernate-orm-panache)");
@@ -354,8 +370,8 @@ public class ProjectSetupValidator {
             Path pomPath = projectRoot.resolve("pom.xml");
             String content = Files.readString(pomPath);
 
-            // Get extensions from spec
-            List<String> extensions = (List<String>) spec.getOrDefault("extensions", List.of());
+            // Resolve extensions list — try multiple YAML paths in priority order.
+            List<String> extensions = resolveExtensions(spec);
 
             if (extensions.isEmpty()) {
                 report.pass("Extensions", "No extensions listed in spec (nothing to check)");
@@ -389,6 +405,64 @@ public class ProjectSetupValidator {
             report.fail("Extensions", "Error checking extensions: " + e.getMessage());
             System.out.println("  ✗ Error checking extensions: " + e.getMessage() + "\n");
         }
+    }
+
+    /**
+     * Resolve the Quarkus extensions list from the spec, trying multiple YAML key
+     * paths in priority order so that specs generated by different agent versions
+     * are all handled correctly.
+     *
+     * Priority:
+     * 1. top-level "extensions" — legacy / hand-edited specs
+     * 2. target_technology.quarkus_extensions — canonical template path
+     * 3. top-level "quarkus_extensions" — flattened variant
+     *
+     * Returns the first non-empty list found, or an empty list if nothing is set.
+     */
+    @SuppressWarnings("unchecked")
+    private List<String> resolveExtensions(Map<String, Object> spec) {
+        // Path 1: top-level "extensions"
+        try {
+            Object val = spec.get("extensions");
+            if (val instanceof List<?> list && !list.isEmpty()) {
+                System.out.println(
+                        "[DEBUG] Extensions resolved via top-level 'extensions' (" + list.size() + " entries)");
+                return (List<String>) list;
+            }
+        } catch (Exception e) {
+            System.out.println("[DEBUG] Could not read top-level 'extensions': " + e.getMessage());
+        }
+
+        // Path 2: target_technology.quarkus_extensions
+        try {
+            Object ttObj = spec.get("target_technology");
+            if (ttObj instanceof Map<?, ?> tt) {
+                Object val = ((Map<String, Object>) tt).get("quarkus_extensions");
+                if (val instanceof List<?> list && !list.isEmpty()) {
+                    System.out.println("[DEBUG] Extensions resolved via 'target_technology.quarkus_extensions' ("
+                            + list.size() + " entries)");
+                    return (List<String>) list;
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("[DEBUG] Could not read 'target_technology.quarkus_extensions': " + e.getMessage());
+        }
+
+        // Path 3: top-level "quarkus_extensions"
+        try {
+            Object val = spec.get("quarkus_extensions");
+            if (val instanceof List<?> list && !list.isEmpty()) {
+                System.out.println(
+                        "[DEBUG] Extensions resolved via top-level 'quarkus_extensions' (" + list.size() + " entries)");
+                return (List<String>) list;
+            }
+        } catch (Exception e) {
+            System.out.println("[DEBUG] Could not read top-level 'quarkus_extensions': " + e.getMessage());
+        }
+
+        System.out.println(
+                "[DEBUG] No extensions found in spec (checked 'extensions', 'target_technology.quarkus_extensions', 'quarkus_extensions')");
+        return List.of();
     }
 
     private void checkDirectories(ValidationReport report) {

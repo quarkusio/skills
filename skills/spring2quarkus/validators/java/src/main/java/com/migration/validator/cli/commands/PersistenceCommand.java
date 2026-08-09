@@ -34,10 +34,13 @@ public class PersistenceCommand implements Callable<Integer> {
     @Option(names = { "-v", "--verbose" }, description = "Enable verbose output with detailed logging")
     private boolean verbose;
 
+    @Option(names = "--compat-mode", description = "Compat mode: skip Panache-specific checks, verify quarkus-spring-data-jpa extension instead", defaultValue = "false")
+    private boolean compatMode;
+
     @Override
     public Integer call() throws Exception {
         PersistenceValidator validator = new PersistenceValidator(
-                springMetadata, quarkusMetadata, projectRoot, specPath);
+                springMetadata, quarkusMetadata, projectRoot, specPath, compatMode);
         return validator.validate(verbose);
     }
 }
