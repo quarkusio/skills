@@ -34,12 +34,27 @@ Create the Quarkus project structure with appropriate extensions based on migrat
 
 ## Steps
 
-1. Read migration-spec.yaml
+1. Read migration-spec.yaml — note `migration_strategy.migration_mode` and all `compat_mode.*` flags
 2. Create target directory structure
 3. Generate pom.xml with:
    - Quarkus BOM
-   - Quarkus extensions from migration-spec.yaml
-   - Java version from user decision
+   - Java version from `target_technology.java_version`
+   - **Full migration** (`migration_mode: full-migration`): add CDI/reactive extensions
+     (e.g. `quarkus-arc`, `quarkus-rest-jackson`, `quarkus-hibernate-orm-panache`)
+   - **Spring compatibility** (`migration_mode: spring-compatibility`): add only
+     `quarkus-spring-*` extensions for each `compat_mode` flag that is `true` — do **not**
+     add `org.springframework.*` group IDs directly; the compat bridges provide them
+     transitively. Typical set:
+     ```xml
+     <!-- quarkus-spring-di       when compat_mode.spring_di: true -->
+     <!-- quarkus-spring-web      when compat_mode.spring_web: true -->
+     <!-- quarkus-spring-data-jpa when compat_mode.spring_data_jpa: true -->
+     <!-- quarkus-spring-security when compat_mode.spring_security: true -->
+     <!-- quarkus-spring-scheduled when compat_mode.spring_scheduled: true -->
+     <!-- quarkus-spring-cache    when compat_mode.spring_cache: true -->
+     <!-- quarkus-spring-boot-properties when compat_mode.spring_boot_properties: true -->
+     <!-- quarkus-spring-tx       when compat_mode.spring_tx: true -->
+     ```
 4. Create application.properties skeleton
 5. Create directory structure:
    - src/main/java/<base-package>/
@@ -54,10 +69,16 @@ Create the Quarkus project structure with appropriate extensions based on migrat
    cd validators/java
    mvn clean package -DskipTests -q
    
-   # Run validator
+   # Full migration
    java -jar target/migration-validator-1.0.0.jar validate project-setup \
      <target_project_root> \
      <target_project_root>/migration-spec.yaml
+
+   # Spring compatibility mode — add --compat-mode
+   java -jar target/migration-validator-1.0.0.jar validate project-setup \
+     <target_project_root> \
+     <target_project_root>/migration-spec.yaml \
+     --compat-mode
    ```
    
    **VALIDATION LOOP (MANDATORY - DO NOT SKIP):**
@@ -67,7 +88,9 @@ Create the Quarkus project structure with appropriate extensions based on migrat
      3. Rerun validator
      4. Repeat until exit code = 0 and Status = SUCCESS
    - Only proceed to next phase when: `Rules: X total | X passed | 0 failed`
-   - Validator checks: POM structure, Quarkus BOM, extensions, no Spring deps, directories, Maven compile
+   - Validator checks: POM structure, Quarkus BOM, extensions (read from `target_technology.quarkus_extensions`),
+     no explicit `org.springframework.*` deps (in compat mode the error message explains they must come
+     transitively via bridges, not be declared directly), directories, Maven compile
 
 ## pom.xml Template
 

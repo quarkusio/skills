@@ -190,36 +190,105 @@ Inputs: repo-metadata.json, dependency-analysis.yaml, templates/migration-spec-t
 
 ### TECHNOLOGY DECISIONS CHECKLIST
 
-Before the planning agent writes migration-spec.yaml, you MUST stop and ask the user for EVERY applicable decision below. Present each as a numbered list with options. Do not skip any decision that is relevant to the detected features in repo-metadata.json.
+Before the planning agent writes migration-spec.yaml, you MUST stop and ask the user the decisions below.
+Present them in two stages — ask Stage 1 first, wait for answers, then present the applicable Stage 2 questions.
+Do not skip any decision that is relevant to the detected features in repo-metadata.json.
 
 ```
- TECHNOLOGY DECISIONS — please answer each one
- ─────────────────────────────────────────────
- [1] Target Java version
-     1) Java 17 (LTS)  2) Java 21 (LTS Virtual Threads)  3) Other (specify)
+ TECHNOLOGY DECISIONS — STAGE 1 (always ask these first)
+ ────────────────────────────────────────────────────────
+ [1] Target Quarkus version
+     1) Latest stable release (recommended — agent resolves it with:
+        curl -s https://repo.maven.apache.org/maven2/io/quarkus/platform/quarkus-bom/maven-metadata.xml \
+          | grep -oP '(?<=<release>)[^<]+'
+     2) Specify a version manually (e.g. "3.15.1")
 
- [2] Persistence strategy
-     1) Hibernate ORM with Panache (recommended)  2) Hibernate ORM (standard)
-     3) Keep Spring Data JPA patterns
+ [2] Target Java version
+     1) Java 17 (LTS)
+     2) Java 21 (LTS with Virtual Threads)
+     3) Other (specify)
 
- [3] Messaging transport (only if messaging detected)
+ [3] Migration mode
+     1) Full migration — rewrite all Spring annotations to CDI/JAX-RS/Panache (recommended)
+     2) Spring compatibility — keep Spring annotations via Quarkus extension bridges
+        ⚠ Still requires manual migration: @Primary, @Lazy, fixedDelay, @ConstructorBinding,
+          Map<K,V> fields, NESTED @Transactional propagation, SecurityFilterChain
+```
+
+Once the user answers [1]–[3], present the applicable Stage 2 questions:
+
+```
+ ── If [3] = Full migration ──────────────────────────────
+
+ [4] Persistence strategy
+     1) Hibernate ORM with Panache (recommended)
+     2) Hibernate ORM (standard)
+     3) Keep Spring Data JPA patterns (custom implementation required)
+
+ [5] Messaging transport (only if messaging detected)
      1) kafka  2) amqp (RabbitMQ)  3) artemis-jms  4) in-memory  5) none
 
- [4] Database strategy
+ [6] REST framework
+     1) Quarkus REST (RESTEasy Reactive) - recommended
+     2) RESTEasy Classic
+     3) Vert.x Web (advanced reactive scenarios)
+
+ [7] Database strategy
      1) H2 dev + PostgreSQL prod (recommended)  2) H2 only
      3) MySQL  4) MariaDB  5) Keep existing
 
- [5] REST framework
-     1) Quarkus REST (RESTEasy Reactive) - recommended  2) RESTEasy Classic
+ [8] Security strategy (only if Spring Security detected)
+     1) None (remove security)
+     2) OIDC / Keycloak  3) Basic auth  4) JWT  5) OAuth2
+     6) LDAP/Active Directory  7) Custom (quarkus-security)  8) mTLS
 
- [6] Security
-     1) None  2) OIDC / Keycloak  3) Basic auth  4) JWT
+ [9] Container target
+     1) Docker (JVM fast-jar) - recommended  2) Docker (native)  3) Podman  4) None
 
- [7] Container target
-     1) Docker (JVM fast-jar)  2) Docker (native)  3) Podman  4) None
+ [10] View technology (only if JSP/JSF/Thymeleaf/FreeMarker detected)
+      1) Migrate to Qute (recommended)
+      2) Maintain JSF with Quarkus MyFaces
+      3) Auto — let agent decide based on file count
+
+ [11] Any features to explicitly SKIP?
+      List them or enter 'none'
+
+
+ ── If [3] = Spring compatibility ────────────────────────
+
+ [4] Messaging transport (only if messaging detected)
+     1) kafka  2) amqp (RabbitMQ)  3) artemis-jms  4) in-memory  5) none
+
+ [5] Database strategy
+     1) H2 dev + PostgreSQL prod (recommended)  2) H2 only
+     3) MySQL  4) MariaDB  5) Keep existing
+
+ [6] Container target
+     1) Docker (JVM fast-jar) - recommended  2) Docker (native)  3) Podman  4) None
+
+ [7] View technology (only if JSP/JSF/Thymeleaf/FreeMarker detected)
+     1) Migrate to Qute (recommended)
+     2) Maintain JSF with Quarkus MyFaces
+     3) Auto — let agent decide based on file count
 
  [8] Any features to explicitly SKIP?
-     List them or enter 'none'
+      List them or enter 'none'
+
+ ── Spring compatibility auto-selections (inform the user, do not ask) ──
+ • Persistence   → quarkus-spring-data-jpa (JpaRepository interfaces kept unchanged)
+ • REST layer    → quarkus-spring-web (@RestController/@RequestMapping kept unchanged)
+                   ⚠ plain @Controller is NOT bridged — only @RestController
+ • Service layer → quarkus-spring-di (@Service/@Component/@Autowired kept unchanged)
+ • Scheduling    → quarkus-spring-scheduled (only if @Scheduled detected)
+                   ⚠ fixedDelay is NOT bridged — throws IllegalArgumentException at runtime
+ • Cache         → quarkus-spring-cache (only if @Cacheable/@CacheEvict detected)
+                   ⚠ arrays of cache names, key/condition/unless, @Caching, @CacheConfig NOT supported
+ • Config props  → quarkus-spring-boot-properties (only if @ConfigurationProperties detected)
+                   ⚠ @ConstructorBinding and Map<K,V> fields NOT supported
+ • Transactions  → quarkus-spring-tx (only if Spring @Transactional import detected)
+                   ⚠ NESTED propagation → build-time error; readOnly and timeout silently ignored
+ • Security      → quarkus-spring-security (only if Spring Security detected)
+                   ⚠ SecurityFilterChain/WebSecurityConfigurerAdapter are NOT bridged — must still be replaced
 ```
 
 Do NOT default any of the above. Wait for the user's answers. Record all choices in migration-spec.yaml under `userDecisions:` before the planning agent finalises the spec.

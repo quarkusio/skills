@@ -58,12 +58,22 @@ target_technology:
   target_repo: null               # absolute path to target repo root
   quarkus_extensions: []
   # Populated by planning agent from dependency-analysis.yaml.
-  # Example entries:
+  # Example entries (full migration):
   #   - quarkus-arc
   #   - quarkus-hibernate-orm-panache
   #   - quarkus-rest-jackson
   #   - quarkus-smallrye-reactive-messaging-kafka
   #   - quarkus-jdbc-postgresql
+  # Spring compatibility mode extensions (all added when migration_mode: spring-compatibility,
+  # each only when the corresponding feature is detected in the source project):
+  #   - quarkus-spring-di               # @Service/@Component present
+  #   - quarkus-spring-web              # spring_web detected
+  #   - quarkus-spring-data-jpa         # spring_data_jpa detected
+  #   - quarkus-spring-scheduled        # spring_scheduled detected
+  #   - quarkus-spring-cache            # spring_cache detected
+  #   - quarkus-spring-boot-properties  # @ConfigurationProperties present
+  #   - quarkus-spring-tx               # Spring @Transactional import present
+  #   - quarkus-spring-security         # spring_security detected
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SECTION 4 — DETECTED FEATURES (agent-controlled boolean flags)
@@ -175,11 +185,23 @@ configurations: []
 # SECTION 12 — MIGRATION STRATEGY
 # ─────────────────────────────────────────────────────────────────────────────
 migration_strategy:
-  service_layer: application-scoped-cdi
-  repository_layer: null          # *** USER DECISION REQUIRED ***
-                                  # panache-repository | hibernate-orm-standard
+  migration_mode: null            # *** USER DECISION REQUIRED ***
+                                  # full-migration       — rewrite all Spring annotations to CDI/JAX-RS/Panache
+                                  # spring-compatibility — keep Spring annotations via Quarkus extension bridges
+  service_layer: null             # auto-set by planning agent:
+                                  #   full-migration       → application-scoped-cdi
+                                  #   spring-compatibility → spring-di-compat (if @Service/@Component present)
+  repository_layer: null          # auto-set by planning agent:
+                                  #   full-migration       → panache-repository | hibernate-orm-standard (user choice)
+                                  #   spring-compatibility → spring-data-compat (if spring_data_jpa detected)
+  rest_framework: null            # auto-set by planning agent:
+                                  #   full-migration       → quarkus-rest | resteasy-classic | vertx-web (user choice)
+                                  #   spring-compatibility → spring-web-compat (if spring_web detected)
   messaging_transport: null       # *** USER DECISION REQUIRED ***
                                   # kafka | amqp | artemis-jms | in-memory | none
+  security_approach: null         # auto-set by planning agent:
+                                  #   full-migration       → none | oidc | basic | jwt | oauth2 | ldap | custom | mtls (user choice)
+                                  #   spring-compatibility → spring-security-compat (if spring_security detected)
   async_strategy: mutiny-uni      # mutiny-uni | cdi-asynchronous
   persistence: null               # *** SET BY PLANNING AGENT ***
                                   # hibernate-orm-panache | hibernate-orm
@@ -187,6 +209,23 @@ migration_strategy:
                                   # qute        — migrate all views to Qute (recommended)
                                   # myfaces     — maintain JSF with Quarkus MyFaces
                                   # auto        — let agent decide based on file count
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SECTION 12b — COMPAT MODE FLAGS
+# ─────────────────────────────────────────────────────────────────────────────
+# Auto-derived from migration_mode by planning agent — do not set manually.
+# Each flag is true only when migration_mode = spring-compatibility AND the
+# corresponding feature is detected in the source project.
+# Read by validators: passed as --compat-mode to the relevant validate subcommand.
+compat_mode:
+  spring_di: false               # true when @Service/@Component present
+  spring_web: false              # true when spring_web detected
+  spring_data_jpa: false         # true when spring_data_jpa detected
+  spring_scheduled: false        # true when spring_scheduled detected
+  spring_cache: false            # true when spring_cache detected
+  spring_boot_properties: false  # true when @ConfigurationProperties present
+  spring_tx: false               # true when Spring @Transactional import present
+  spring_security: false         # true when spring_security detected
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SECTION 13 — MIGRATION PHASES

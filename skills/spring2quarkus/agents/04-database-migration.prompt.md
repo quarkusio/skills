@@ -120,6 +120,7 @@ INSERT INTO users (id, username, email) VALUES (2, 'user', 'user@example.com');
 | `spring.jpa.hibernate.ddl-auto` | (remove) | Use import.sql instead |
 | `spring.sql.init.mode` | (remove) | import.sql auto-runs |
 | `spring.sql.init.schema-locations` | (remove) | import.sql auto-runs |
+
 ### CRITICAL: Hibernate ORM Configuration for import.sql Execution
 
 **⚠️ IMPORTANT QUARKUS BEHAVIOR:**
@@ -159,7 +160,6 @@ quarkus.hibernate-orm.log.sql=true
 - Static validation in Phase 4 can only verify file existence and configuration
 - **Actual import.sql execution verification happens in Phase 5** after entities are migrated
 - Phase 5 agent will start the application and verify SQL statements in logs
-
 
 ### Database-Specific Configuration
 
