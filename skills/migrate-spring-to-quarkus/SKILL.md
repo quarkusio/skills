@@ -13,6 +13,11 @@ metadata:
 
 Modular, gate-driven migration of Spring Boot applications to Quarkus.
 
+**Migration paths:**
+- **JSP-based apps**: JSP → Thymeleaf (Spring Boot) → Qute (Quarkus)
+- **Thymeleaf-based apps**: Thymeleaf → Qute (Quarkus)
+- **REST APIs**: Direct Spring → Quarkus migration
+
 ## Critical Rules
 
 - **Never delete code you cannot migrate.** If you cannot fully migrate a piece of code, leave the original in place with a `// TODO: Migration required — <reason>` comment explaining what needs to change and why. This applies to:
@@ -34,7 +39,6 @@ Load the relevant reference file when working on a module:
 | [references/annotation-map.md](references/annotation-map.md) | Code module: annotation, DI, REST, Data, Security migration |
 | [references/config-map.md](references/config-map.md) | Build module: configuration property migration |
 
-
 ## Step 1: Analyze & Choose Strategy
 
 Scan the application to understand what needs to migrate:
@@ -42,7 +46,7 @@ Scan the application to understand what needs to migrate:
 - **Build system**: Read the build file (`pom.xml` for Maven, `build.gradle` or `build.gradle.kts` for Gradle) — Spring Boot version, starters, plugins
 - **Java code**: Search for Spring annotations (DI, REST, Data, Security, Scheduling)
 - **Configuration**: Read `application.properties`/`application.yml`, check for profiles
-- **UI / View layer**: Check for Thymeleaf/JSP templates, static resources, Model+View patterns
+- **UI / View layer**: Check for JSP templates in `webapp/WEB-INF/jsp/` or `webapp/WEB-INF/views/`, Thymeleaf templates in `templates/`, static resources, Model+View patterns
 - **Tests**: Check for `@SpringBootTest`, `@WebMvcTest`, `@DataJpaTest`
 
 Present a summary table with area, findings, and complexity. Then ask the user to choose a strategy:
@@ -80,14 +84,15 @@ After the user has chosen a strategy, check if the target project is a git repos
 | [jdk](modules/jdk.md)           | JDK 21+ required                                   | **ALWAYS** -- stop migration if < 21 |
 | [build](modules/build.md)       | Spring Boot parent/starters/`spring-boot-maven-plugin` in `pom.xml`, or Spring Boot/`io.spring.dependency-management` plugins in `build.gradle(.kts)` | **PASS** if Spring Boot build markers found; **SKIP** otherwise                          |
 | [code](modules/code.md)         | Spring annotations in Java sources (`@Component`, `@Service`, `@Controller`, `@Repository`, `@Entity`, `@Autowired`, etc.) | **PASS** if Spring annotations found; **SKIP** otherwise                                 |
-| [frontend](modules/frontend.md) | Thymeleaf/JSP templates in `templates/` or static resources in `static/`                                                  | **PASS** if view layer found; **SKIP** otherwise                                         |
+| [frontend-jsp](modules/frontend-jsp.md) | JSP files in `webapp/WEB-INF/jsp/` or `webapp/WEB-INF/views/`, JSP dependencies in pom.xml                                | **PASS** if JSP templates found; **SKIP** otherwise (must run before frontend module)    |
+| [frontend](modules/frontend.md) | Thymeleaf templates in `templates/` or static resources in `static/`                                                  | **PASS** if view layer found; **SKIP** otherwise                                         |
 | [testing](modules/testing.md)   | Spring test annotations in test sources (`@SpringBootTest`, `@WebMvcTest`, `@MockBean`)                                   | **PASS** if Spring tests found; **SKIP** otherwise                                       |
 | [cleanup](modules/cleanup.md)   | Leftover Spring artifacts after all other modules                                                                          | **ALWAYS** — runs after all other modules                                                |
 
 ### Execution Protocol
 
 ```
-FOR module IN [build, code, frontend, testing, cleanup]:
+FOR module IN [build, code, frontend-jsp, frontend, testing, cleanup]:
 
   1. EVALUATE — inspect the project for the gate condition
   2. DECIDE
@@ -106,10 +111,13 @@ FOR module IN [build, code, frontend, testing, cleanup]:
 To run a single module outside the full migration flow, read its file directly:
 
 - "Read `modules/build.md` and execute it"
-- "Run only the frontend module"
+- "Run only the frontend-jsp module" — migrates JSP to Thymeleaf (pre-Quarkus step)
+- "Run only the frontend module" — migrates Thymeleaf to Qute
 - "Re-run the cleanup module"
 
 The module will use the current project state and the chosen strategy (if already decided). If no strategy has been chosen, the module will ask.
+
+**Note:** The `frontend-jsp` module is a pre-migration step that converts JSP pages to Thymeleaf within Spring Boot, before the final Thymeleaf → Qute migration in the `frontend` module.
 
 ## Step 4: Verify the Migration
 
