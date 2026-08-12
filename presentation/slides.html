@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI-Powered Spring to Quarkus Migration</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700;900&family=Red+Hat+Text:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --rh-red: #EE0000;
+    --rh-red-dark: #A30000;
+    --rh-dark: #151515;
+    --rh-gray-dark: #3C3F42;
+    --rh-gray: #6A6E73;
+    --rh-gray-light: #D2D2D2;
+    --rh-white: #FFFFFF;
+    --rh-blue: #0066CC;
+    --rh-teal: #009596;
+    --rh-green: #3E8635;
+    --rh-orange: #F4B678;
+    --quarkus-blue: #4695EB;
+    --spring-green: #6DB33F;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Red Hat Text', 'Segoe UI', sans-serif;
+    background: var(--rh-dark);
+    color: var(--rh-white);
+  }
+
+  .deck {
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .slide {
+    width: 100%;
+    height: 100vh;
+    display: none;
+    padding: 60px 80px;
+    position: relative;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .slide.active { display: flex; }
+
+  .slide-number {
+    position: absolute;
+    bottom: 20px;
+    right: 40px;
+    font-size: 14px;
+    color: var(--rh-gray);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .brand-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--rh-red) 0%, var(--rh-red) 40%, var(--quarkus-blue) 60%, var(--quarkus-blue) 100%);
+  }
+
+  h1 {
+    font-family: 'Red Hat Display', sans-serif;
+    font-weight: 900;
+    font-size: 56px;
+    line-height: 1.1;
+    margin-bottom: 24px;
+  }
+
+  h2 {
+    font-family: 'Red Hat Display', sans-serif;
+    font-weight: 700;
+    font-size: 42px;
+    line-height: 1.2;
+    margin-bottom: 32px;
+    color: var(--rh-white);
+  }
+
+  h3 {
+    font-family: 'Red Hat Display', sans-serif;
+    font-weight: 500;
+    font-size: 24px;
+    color: var(--rh-gray-light);
+    margin-bottom: 16px;
+  }
+
+  p, li {
+    font-size: 22px;
+    line-height: 1.6;
+    color: var(--rh-gray-light);
+  }
+
+  ul { list-style: none; padding: 0; }
+
+  ul li {
+    padding: 10px 0;
+    padding-left: 28px;
+    position: relative;
+  }
+
+  ul li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 18px;
+    width: 10px;
+    height: 10px;
+    background: var(--rh-red);
+    border-radius: 2px;
+  }
+
+  .highlight { color: var(--rh-white); font-weight: 700; }
+  .red { color: var(--rh-red); }
+  .blue { color: var(--quarkus-blue); }
+  .green { color: var(--spring-green); }
+  .teal { color: var(--rh-teal); }
+  .orange { color: var(--rh-orange); }
+
+  .subtitle {
+    font-size: 26px;
+    color: var(--rh-gray-light);
+    font-weight: 400;
+    margin-bottom: 12px;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    margin-top: 16px;
+  }
+
+  .three-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 32px;
+    margin-top: 24px;
+  }
+
+  .card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 28px;
+  }
+
+  .card h3 {
+    font-size: 20px;
+    margin-bottom: 12px;
+    color: var(--rh-white);
+  }
+
+  .card p, .card li { font-size: 18px; }
+
+  .card.spring { border-left: 4px solid var(--spring-green); }
+  .card.quarkus { border-left: 4px solid var(--quarkus-blue); }
+  .card.ibm { border-left: 4px solid var(--rh-teal); }
+  .card.ask { border-left: 4px solid var(--rh-red); }
+  .card.mtool { border-left: 4px solid var(--rh-orange); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+    font-size: 18px;
+  }
+
+  th {
+    text-align: left;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.08);
+    color: var(--rh-white);
+    font-weight: 700;
+    font-family: 'Red Hat Display', sans-serif;
+    border-bottom: 2px solid var(--rh-red);
+  }
+
+  td {
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    color: var(--rh-gray-light);
+  }
+
+  tr:hover td { background: rgba(255,255,255,0.03); }
+
+  .pass { color: var(--rh-green); font-weight: 700; }
+  .fail { color: var(--rh-red); font-weight: 700; }
+  .best { color: var(--rh-teal); font-weight: 700; }
+
+  .stat-row {
+    display: flex;
+    gap: 32px;
+    margin-top: 32px;
+  }
+
+  .stat {
+    text-align: center;
+    flex: 1;
+  }
+
+  .stat .number {
+    font-family: 'Red Hat Display', sans-serif;
+    font-size: 52px;
+    font-weight: 900;
+    color: var(--rh-white);
+  }
+
+  .stat .label {
+    font-size: 16px;
+    color: var(--rh-gray);
+    margin-top: 4px;
+  }
+
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 24px 0;
+    flex-wrap: wrap;
+  }
+
+  .flow-step {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    padding: 14px 20px;
+    font-size: 17px;
+    color: var(--rh-gray-light);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .flow-step.active-step {
+    border-color: var(--rh-red);
+    color: var(--rh-white);
+    background: rgba(238,0,0,0.1);
+  }
+
+  .flow-step.mtool-step {
+    border-color: var(--rh-orange);
+    color: var(--rh-white);
+    background: rgba(244,182,120,0.12);
+  }
+
+  .flow-step.ai-step {
+    border-color: var(--quarkus-blue);
+    color: var(--rh-white);
+    background: rgba(70,149,235,0.12);
+  }
+
+  .flow-step.validator-step {
+    border-color: var(--rh-teal);
+    color: var(--rh-white);
+    background: rgba(0,149,150,0.12);
+  }
+
+  .flow-arrow {
+    color: var(--rh-gray);
+    font-size: 20px;
+  }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(255,255,255,0.08);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+  }
+
+  .controls {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    z-index: 100;
+    opacity: 0.3;
+    transition: opacity 0.2s;
+  }
+  .controls:hover { opacity: 1; }
+
+  .controls button {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: white;
+    padding: 8px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'Red Hat Text', sans-serif;
+    font-size: 14px;
+  }
+  .controls button:hover { background: rgba(255,255,255,0.2); }
+
+  .logo-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-top: 24px;
+  }
+
+  .logo-text {
+    font-family: 'Red Hat Display', sans-serif;
+    font-weight: 900;
+    font-size: 28px;
+  }
+
+  .divider {
+    width: 2px;
+    height: 28px;
+    background: var(--rh-gray);
+  }
+
+  .footnote {
+    position: absolute;
+    bottom: 40px;
+    left: 80px;
+    font-size: 15px;
+    color: var(--rh-gray);
+  }
+
+  .comparison-row {
+    display: flex;
+    align-items: stretch;
+    gap: 24px;
+    margin-top: 16px;
+  }
+
+  .comparison-col {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .comparison-col h3 {
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+
+  .comparison-col ul li { font-size: 17px; padding: 6px 0; }
+
+  .person {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+
+  .person-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 2px solid var(--rh-red);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-family: 'Red Hat Display', sans-serif;
+    font-weight: 900;
+    flex-shrink: 0;
+    color: var(--rh-white);
+  }
+
+  .person-info h3 {
+    color: var(--rh-white);
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .person-info p {
+    font-size: 19px;
+    color: var(--rh-gray-light);
+    margin-bottom: 4px;
+  }
+
+  .legend {
+    display: flex;
+    gap: 24px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    color: var(--rh-gray-light);
+  }
+
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- SLIDE 1: Title -->
+  <div class="slide active">
+    <div class="brand-bar"></div>
+    <div style="margin-top: 40px;">
+      <h3 style="color: var(--rh-gray); margin-bottom: 8px; font-size: 18px; text-transform: uppercase; letter-spacing: 2px;">Tech Sales Enablement</h3>
+      <h1>AI-Powered<br><span class="green">Spring Boot</span> to <span class="blue">Quarkus</span><br>Migration</h1>
+      <p class="subtitle" style="font-size: 24px; margin-top: 16px;">From weeks of manual work to minutes with AI + deterministic tooling</p>
+      <div class="logo-row" style="margin-top: 48px;">
+        <span class="logo-text" style="color: var(--quarkus-blue);">Quarkus</span>
+        <span class="divider"></span>
+        <span class="logo-text" style="color: var(--rh-teal);">IBM Research</span>
+      </div>
+      <p style="margin-top: 32px; font-size: 18px; color: var(--rh-gray);">Aurea Munoz &middot; August 13, 2026</p>
+    </div>
+    <div class="slide-number">1 / 14</div>
+  </div>
+
+  <!-- SLIDE 2: About Us -->
+  <div class="slide">
+    <div class="brand-bar"></div>
+    <h2>About Us</h2>
+    <div style="margin-top: 16px;">
+      <div class="person">
+        <div class="person-icon">AM</div>
+        <div class="person-info">
+          <h3>Aurea Munoz</h3>
+          <p><span class="blue">Quarkus</span> Team, IBM</p>
+          <p style="color: var(--rh-gray);">Previously: Spring Boot productization</p>
+        </div>
+      </div>
+      <div class="person">
+        <div class="person-icon">CM</div>
+        <div class="person-info">
+          <h3>Charles Moulliard</h3>
+          <p><span class="blue">Quarkus</span> Team, IBM</p>
+          <p style="color: var(--rh-gray);">Previously: Spring Boot productization</p>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top: 32px; background: rgba(238,0,0,0.06); border: 1px solid rgba(238,0,0,0.15);">
+      <p style="font-size: 22px;"><span class="highlight">We know both sides.</span> We productized Spring Boot, and now we build Quarkus. We understand the migration pain because we've lived it &mdash; and that's why we built this tool.</p>
+    </div>
+    <div class="slide-number">2 / 14</div>
+  </div>
+
+  <!-- SLIDE 3: The Problem -->
+  <div class="slide">
+    <div class="brand-bar"></div>
+    <h2>The Migration Problem</h2>
+    <div class="two-col">
+      <div>
+        <ul>
+          <li><span class="highlight">60%+ of enterprise Java</span> runs on Spring Boot</li>
+          <li>Migration to Quarkus = <span class="highlight">manual, error-prone, expensive</span></li>
+          <li>Typical medium app: <span class="red">2-4 weeks</span> of developer time</li>
+          <li>Migration is the <span class="highlight">#1 friction point</span> for Quarkus adoption</li>
+        </ul>
+      </div>
+      <div>
+        <h3>What migration involves</h3>
+        <div class="flow">
+          <span class="flow-step">Read Spring code</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-step">Understand patterns</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-step">Rewrite to Quarkus</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-step">Fix build</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-step">Fix tests</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-step">Verify</span>
+        </div>
+        <p style="margin-top: 16px; font-size: 18px; font-style: italic; color: var(--rh-gray);">...per file, per annotation, per config property. Hundreds of files in enterprise apps.</p>
+      </div>
+    </div>
+    <div class="slide-number">3 / 14</div>
+  </div>
+
+  <!-- SLIDE 4: What We Built -->
+  <div class="slide">
+    <div class="brand-bar"></div>
+    <h2>What We Built</h2>
+    <p class="subtitle">An AI skill that encodes migration expertise into a reusable, automated tool</p>
+    <div class="three-col" style="margin-top: 32px;">
+      <div class="card">
+        <h3>AI Skill</h3>
+        <p>Structured instructions that tell an AI coding agent <em>exactly</em> how to migrate Spring Boot to Quarkus. Not a one-shot prompt &mdash; a modular, gate-driven process.</p>
+      </div>
+      <div class="card">
+        <h3>Open Source</h3>
+        <p><code>quarkusio/quarkus-skills</code><br><br>Works with Claude Code, opencode, pi, and other AI agents. Published as a Claude Code plugin.</p>
+      </div>
+      <div class="card">
+        <h3>Two Strategies</h3>
+        <p>Spring Compatibility mode (low risk) or Full Quarkus mode (full performance). The customer chooses based on their risk appetite.</p>
+      </div>
+    </div>
+    <div class="slide-number">4 / 14</div>
+  </div>
+
+  <!-- SLIDE 5: Two Strategies -->
+  <div class="slide">
+    <div class="brand-bar"></div>
+    <h2>Two Migration Paths</h2>
+    <p class="subtitle" style="margin-bottom: 32px;">Customers choose based on their risk appetite and timeline</p>
+    <div class="two-col">
+      <div class="card spring">
+        <h3><span class="green">Spring Compatibility</span></h3>
+        <p style="margin-bottom: 16px; color: var(--rh-white);">Recommended for most enterprise migrations</p>
+        <ul>
+          <li>Uses <code>quarkus-spring-web</code>, <code>quarkus-spring-di</code>, <code>quarkus-spring-data-jpa</code></li>
+          <li>Keeps Spring annotations in the code</li>
+          <li>Minimal code changes, lower risk</li>
+          <li>Runs on Quarkus with Spring API surface</li>
+          <li>Incremental path to full Quarkus later</li>
+        </ul>
+      </div>
+      <div class="card quarkus">
+        <h3><span class="blue">Full Quarkus</span></h3>
+        <p style="margin-bottom: 16px; color: var(--rh-white);">For teams ready to go all-in</p>
+        <ul>
+          <li>Replaces all Spring with JAX-RS, CDI, Panache</li>
+          <li>Native Quarkus APIs throughout</li>
+          <li>Best performance and smallest footprint</li>
+          <li>Full access to Quarkus ecosystem</li>
+          <li>More changes, but cleaner result</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footnote">Most enterprise customers start with compatibility mode and migrate to full Quarkus incrementally</div>
+    <div class="slide-number">5 / 14</div>
+  </div>
+
+  <!-- SLIDE 6: How It Works -->
+  <div class="slide">
+    <div class="brand-bar"></div>
+    <h2>How It Works</h2>
+    <p class="subtitle" style="margin-bottom: 24px;">Modular, gate-driven &mdash; compiles after every module</p>
+    <div class="flow" style="justify-content: center; gap: 8px;">
+      <span class="flow-step active-step">JDK Check</span>
+      <span class="flow-arrow">&rarr;</span>
+      <span class="flow-step active-step">Build</span>
+      <span class="flow-arrow">&rarr;</span>
+      <span class="flow-step active-step">Code</span>
+      <span class="flow-arrow">&rarr;</span>
+      <span class="flow-step active-step">Frontend</span>
+      <span class="flow-arrow">&rarr;</span>
+      <span class="flow-step active-step">Testing</span>
+      <span class="flow-arrow">&rarr;</span>
+      <span class="flow-step active-step">Cleanup</span>
+    </div>
+    <div class="two-col" style="margin-top: 32px;">
+      <div>
+        <h3>Automatic Gate System</h3>
+        <ul>
+          <li>Each module has a <span class="highlight">gate condition</span> evaluated automatically</li>
+          <li>No Thymeleaf templates? Frontend module <span class="highlight">skipped</span></li>
+          <li>No Spring tests? Testing module <span class="highlight">skipped</span></li>
+          <li><span class="highlight">Compile check</span> after every module &mdash; never moves forward broken</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Reference Files</h3>
+        <ul>
+          <li><code>dependency-map.md</code> &mdash; every Spring starter &rarr; Quarkus equivalent</li>
+          <li><code>annotation-map.md</code> &mdash; Spring &rarr; CDI/JAX-RS annotations</li>
+          <li><code>config-map.md</code> &mdash; application.properties key mapping</li>
+        </ul>
+        <p style="margin-top: 16px; font-size: 17px;"><span class="highlight">Git workflow:</span> branch per migration run &mdash; <code>main</code> stays intact</p>
+      </div>
+    </div>
+    <div class="slide-number">6 / 14</div>
+  </div>
+
+  <!-- SLIDE 7: Real Results -->
+  <div class="slide">
+    <div class="brand-bar"></div>
+    <h2>Real Results</h2>
+    <p class="subtitle">Spring Boot TODO App &mdash; REST + Thymeleaf + JPA + MySQL</p>
+    <div class="stat-row">
+      <div class="stat">
+        <div class="number">&lt; 10 min</div>
+        <div class="label">migration time</div>
+      </div>
+      <div class="stat">
+        <div class="number">A few $</div>
+        <div class="label">AI cost</div>
+      </div>
+      <div class="stat">
+        <div class="number">5/5</div>
+        <div class="label">modules completed</div>
+      </div>
+      <div class="stat">
+        <div class="number">4/4</div>
+        <div class="label">checks passed</div>
+      </div>
+    </div>
+    <table style="margin-top: 36px;">
+      <thead>
+        <tr>
+          <th>Module</th>
+          <th>What changed</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="highlight">Build</span></td>
+          <td>Spring Boot parent &rarr; Quarkus BOM 3.37. All starters replaced with Quarkus extensions.</td>
+        </tr>
+        <tr>
+          <td><span class="highlight">Code</span></td>
+          <td>Controller rewritten from Spring MVC to JAX-RS + Qute. Repository & service kept (compat).</td>
+        </tr>
+        <tr>
+          <td><span class="highlight">Frontend</span></td>
+          <td>Thymeleaf templates converted to Qute. Static resources moved to META-INF/resources.</td>
+        </tr>
+        <tr>
+          <td><span class="highlight">Testing</span></td>
+          <td><code>@SpringBootTest</code> &rarr; <code>@QuarkusTest</code>. H2 test datasource configured.</td>
+        </tr>
+        <tr>
+          <td><span class="highlight">Cleanup</span></td>
+          <td>Removed <code>AppApplication.java</code>, unused dependencies, Spring artifacts.</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="slide-number">7 / 14</div>
+  </div>
+
+  <!-- SLIDE 8: Validated Against Real Migration -->
+  <div class="slide">
+    <div class="brand-bar"></div>
+    <h2>Validated Against Real Migration</h2>
+    <p class="subtitle">Compared against <code>spring-quarkus-perf-comparison</code> manual bash script</p>
+    <div class="two-col" style="margin-top: 24px;">
+      <div>
+        <table>
+          <thead>
+            <tr><th>Aspect</th><th>Bash Script</th><th>AI Skill</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Java source</td><td colspan="2" style="text-align: center;"><span class="pass">IDENTICAL</span></td></tr>
+            <tr><td>Tests</td><td class="fail">Deleted all</td><td class="pass">Migrated to @QuarkusTest</td></tr>
+            <tr><td>SQL file naming</td><td>data.sql (Spring)</td><td class="pass">import.sql (Quarkus)</td></tr>
+            <tr><td>Container image ext.</td><td class="pass">Included</td><td>Not included*</td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top: 12px; font-size: 14px; color: var(--rh-gray);">* Repo-specific extension, not part of Spring original</p>
+      </div>
+      <div>
+        <div class="card" style="background: rgba(62,134,53,0.08); border-color: rgba(62,134,53,0.3);">
+          <h3 style="color: var(--rh-green);">Key Takeaway</h3>
+          <p>The AI skill produces <span class="highlight">functionally identical code</span> to the handcrafted bash script, with <span class="highlight">two improvements</span>: preserves tests and uses correct Quarkus conventions.</p>
+          <p style="margin-top: 12px;">This is a real app maintained by our performance team &mdash; not a toy example.</p>
+        </div>
+      </div>
+    </div>
+    <div class="slide-number">8 / 14</div>
+  </div>
+
+  <!-- SLIDE 9: IBM Research Collaboration -->
+  <div class="slide">
+    <div class="brand-bar"></div>
+    <h2>IBM Research Collaboration</h2>
+    <p class="subtitle">PR #37 &mdash; George Safta's team &middot; +33,686 lines &middot; 93 files</p>
+    <div class="three-col" style="margin-top: 24px;">
+      <div class="card ibm">
+        <h3>Deterministic Validators</h3>
+        <p>8 Java CLI validators that verify each migration phase <em>without relying on AI</em>.</p>
+        <p style="margin-top: 12px; font-size: 16px; color: var(--rh-gray);">Config, Database, Messaging, Persistence, ProjectSetup, REST, Service, UI</p>
+      </div>
+      <div class="card ibm">
+        <h3>Layer-by-Layer</h3>
+        <p>12 migration phases, each with its own specialized agent prompt and validation step.</p>
+        <p style="margin-top: 12px; font-size: 16px; color: var(--rh-gray);">Database &rarr; Persistence &rarr; Service &rarr; Messaging &rarr; REST &rarr; Views &rarr; Config</p>
+      </div>
+      <div class="card ibm">
+        <h3>Static Analysis</h3>
+        <p>IBM's <code>CodeAnalyzer</code> for deep source code analysis before migration begins.</p>
+        <p style="margin-top: 12px; font-size: 16px; color: var(--rh-gray);">Call graphs, entity extraction, dependency analysis</p>
+      </div>
+    </div>
+    <div style="margin-top: 32px;">
+      <h3>Additional innovations</h3>
+      <div class="flow">
+        <span class="flow-step">Resumable state</span>
+        <span class="flow-step">Compile-fix agent (3 retries)</span>
+        <span class="flow-step">JSF / FreeMarker support</span>
+        <span class="flow-step">Spring compat mode (added after our review)</span>
+      </div>
+    </div>
+    <div class="slide-number">9 / 14</div>
+  </div>
+
+  <!-- SLIDE 10: Benchmark Results -->
+  <div class="slide">
+    <div class="brand-bar"></div>
+    <h2>Benchmark Results</h2>
+    <p class="subtitle">IBM Research scarfbench dataset &mdash; 5 real-world applications</p>
+    <table style="margin-top: 24px; font-size: 20px;">
+      <thead>
+        <tr>
+          <th>Application</th>
+          <th>Plain AI<br><span style="font-weight: 400; font-size: 14px;">Opus 4.7</span></th>
+          <th>AI + UltraCode<br><span style="font-weight: 400; font-size: 14px;">Opus 4.8</span></th>
+          <th>Layer-wise + Validators<br><span style="font-weight: 400; font-size: 14px;">PR #37</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="highlight">DayTrader</span></td>
+          <td><span class="fail">FAIL Deploy</span></td>
+          <td><span class="pass">PASS</span>, 0/30</td>
+          <td><span class="best">PASS, 2/30</span></td>
+        </tr>
+        <tr>
+          <td><span class="highlight">CargoTracker</span></td>
+          <td><span class="pass">PASS</span>, 24/33</td>
+          <td><span class="pass">PASS</span>, 0/33</td>
+          <td><span class="best">PASS, 33/33</span></td>
+        </tr>
+        <tr>
+          <td><span class="highlight">Coffee-Shop</span></td>
+          <td><span class="pass">PASS</span>, 5/9</td>
+          <td><span class="pass">PASS</span>, 5/9</td>
+          <td><span class="pass">PASS</span>, 5/9</td>
+        </tr>
+        <tr>
+          <td><span class="highlight">PetClinic</span></td>
+          <td><span class="pass">PASS</span>, 12/13</td>
+          <td><span class="pass">PASS</span>, 3/13</td>
+          <td><span class="pass">PASS</span>, 11/13</td>
+        </tr>
+        <tr>
+          <td><span class="highlight">RealWorld</span></td>
+          <td><span class="pass">PASS</span>, 33/62</td>
+          <td><span class="pass">PASS</span>, 33/62</td>
+          <td><span class="pass">PASS</span>, 33/62</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="card" style="margin-top: 32px; background: rgba(0,149,150,0.08); border-color: rgba(0,149,150,0.3); padding: 20px 28px;">
+      <p><span class="teal" style="font-weight: 700;">CargoTracker: 24/33 &rarr; 33/33</span> &mdash; a complex enterprise app, fully migrated with all functional tests passing. This is the power of deterministic validation combined with AI.</p>
+    </div>
+    <div class="slide-number">10 / 14</div>
+  </div>
+
+  <!-- SLIDE 11: The Vision — mtool + AI -->
+  <div class="slide">
+    <div class="brand-bar"></div>
+    <h2>The Vision: <span class="orange">mtool</span> + <span class="blue">AI</span> = Hybrid</h2>
+    <p class="subtitle">Cheaper, more deterministic, more reproducible migrations</p>
+    <div style="margin-top: 24px;">
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background: var(--rh-orange);"></div>Deterministic (mtool)</div>
+        <div class="legend-item"><div class="legend-dot" style="background: var(--quarkus-blue);"></div>AI (skill)</div>
+        <div class="legend-item"><div class="legend-dot" style="background: var(--rh-teal);"></div>Deterministic (validators)</div>
+      </div>
+      <div class="flow" style="justify-content: center; gap: 8px; margin-top: 16px;">
+        <span class="flow-step mtool-step">mtool: Analyze</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-step mtool-step">mtool: Transform</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-step ai-step">AI: Migrate complex logic</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-step validator-step">Validators: Verify</span>
+      </div>
+    </div>
+    <div class="two-col" style="margin-top: 32px;">
+      <div class="card mtool">
+        <h3><span class="orange">mtool</span> &mdash; what it does</h3>
+        <ul>
+          <li><span class="highlight">Analyzes</span> Spring code: dependencies, annotations, patterns</li>
+          <li><span class="highlight">Transforms</span> deterministically: imports, deps, annotations</li>
+          <li>Same input = same output, every time</li>
+          <li>No AI tokens, no variability</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left: 4px solid var(--quarkus-blue);">
+        <h3><span class="blue">AI skill</span> &mdash; handles the rest</h3>
+        <ul>
+          <li>Controller logic and rewrites</li>
+          <li>Template conversion (Thymeleaf &rarr; Qute)</li>
+          <li>Contextual decisions (strategy, edge cases)</li>
+          <li>Test migration and config reasoning</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-top: 24px; text-align: center; background: rgba(244,182,120,0.06); border-color: rgba(244,182,120,0.2);">
+      <p><span class="highlight">Goal:</span> mtool handles the mechanical work &rarr; AI focuses on what truly needs intelligence &rarr; migrations become <span class="highlight">cheaper and more reproducible</span></p>
+    </div>
+    <div class="slide-number">11 / 14</div>
+  </div>
+
+  <!-- SLIDE 12: Test Harness -->
+  <div class="slide">
+    <div class="brand-bar"></div>
+    <h2>Quality at Scale</h2>
+    <p class="subtitle">Automated test harness to validate migration quality across models and strategies</p>
+    <div class="two-col" style="margin-top: 24px;">
+      <div>
+        <h3>How it works</h3>
+        <div class="flow" style="flex-direction: column; align-items: flex-start;">
+          <span class="flow-step" style="width: 100%; text-align: center;">Take a Spring Boot project</span>
+          <span class="flow-arrow" style="align-self: center;">&darr;</span>
+          <span class="flow-step" style="width: 100%; text-align: center;">Run migration (with or without mtool)</span>
+          <span class="flow-arrow" style="align-self: center;">&darr;</span>
+          <span class="flow-step" style="width: 100%; text-align: center;">Execute 6 automated checks</span>
+          <span class="flow-arrow" style="align-self: center;">&darr;</span>
+          <span class="flow-step" style="width: 100%; text-align: center;">Track results over time &rarr; HTML dashboard</span>
+        </div>
+      </div>
+      <div>
+        <h3>6 Automated Checks</h3>
+        <table>
+          <tbody>
+            <tr><td style="font-size: 16px;">Builds</td><td style="font-size: 16px;"><code>mvn compile</code> succeeds</td></tr>
+            <tr><td style="font-size: 16px;">Tests pass</td><td style="font-size: 16px;"><code>mvn test</code> succeeds</td></tr>
+            <tr><td style="font-size: 16px;">No Spring deps</td><td style="font-size: 16px;">No <code>org.springframework</code> in pom</td></tr>
+            <tr><td style="font-size: 16px;">Has Quarkus</td><td style="font-size: 16px;"><code>io.quarkus</code> present in pom</td></tr>
+            <tr><td style="font-size: 16px;">Starts up</td><td style="font-size: 16px;">App starts, responds to HTTP</td></tr>
+            <tr><td style="font-size: 16px;">No templates</td><td style="font-size: 16px;">No Thymeleaf remains</td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top: 16px; font-size: 17px;">Works with <span class="highlight">multiple AI agents</span> and <span class="highlight">multiple models</span>. Compares results with/without mtool.</p>
+      </div>
+    </div>
+    <div class="slide-number">12 / 14</div>
+  </div>
+
+  <!-- SLIDE 13: The Ask -->
+  <div class="slide">
+    <div class="brand-bar"></div>
+    <h2>We Need <span class="red">Pilot Customers</span></h2>
+    <p class="subtitle" style="margin-bottom: 32px;">Help us take this from a working prototype to a proven solution</p>
+    <div class="two-col">
+      <div class="card ask">
+        <h3>What we're looking for</h3>
+        <ul>
+          <li>Customers with <span class="highlight">Spring Boot apps</span> they want on Quarkus</li>
+          <li>Medium complexity: REST APIs, JPA, standard patterns</li>
+          <li>Willing to share code or let us work in their environment</li>
+          <li>Open to giving feedback on the process</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left: 4px solid var(--rh-green);">
+        <h3>What the customer gets</h3>
+        <ul>
+          <li><span class="highlight">Free</span> AI-assisted migration with expert support</li>
+          <li>Choice of strategy: low-risk compat or full Quarkus</li>
+          <li>Detailed migration report documenting every change</li>
+          <li>Direct access to the team building the tool</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-top: 32px; background: rgba(238,0,0,0.06); border: 1px solid rgba(238,0,0,0.2); text-align: center; padding: 20px;">
+      <p style="font-size: 22px;">If you have a customer in mind, <span class="highlight">talk to me after this session</span> or send me an email.<br>Even if the app seems too complex &mdash; hearing about it helps us prioritize.</p>
+    </div>
+    <div class="slide-number">13 / 14</div>
+  </div>
+
+  <!-- SLIDE 14: Summary -->
+  <div class="slide">
+    <div class="brand-bar"></div>
+    <h2>Summary</h2>
+    <div style="margin-top: 32px;">
+      <div class="stat-row" style="margin-bottom: 48px;">
+        <div class="stat">
+          <div class="number" style="font-size: 40px;">Minutes</div>
+          <div class="label">not weeks</div>
+        </div>
+        <div class="stat">
+          <div class="number" style="font-size: 40px;">Low cost</div>
+          <div class="label">a few dollars per migration</div>
+        </div>
+        <div class="stat">
+          <div class="number" style="font-size: 40px;">2 paths</div>
+          <div class="label">compat or full</div>
+        </div>
+        <div class="stat">
+          <div class="number" style="font-size: 40px;">Hybrid</div>
+          <div class="label">mtool + AI + validators</div>
+        </div>
+      </div>
+      <ul style="max-width: 800px;">
+        <li>Working AI tool that migrates Spring Boot to Quarkus &mdash; <span class="highlight">tested and validated</span></li>
+        <li>IBM Research adding <span class="highlight">deterministic validation</span> per migration layer</li>
+        <li><span class="orange highlight">mtool</span> making migrations <span class="highlight">cheaper and more reproducible</span></li>
+        <li>Next step: <span class="red highlight">real customer applications</span> &mdash; your help is invaluable</li>
+      </ul>
+    </div>
+    <p style="margin-top: 48px; font-size: 28px; font-family: 'Red Hat Display', sans-serif; font-weight: 700;">Questions?</p>
+    <p style="margin-top: 16px; font-size: 18px; color: var(--rh-gray);">Aurea Munoz &middot; Charles Moulliard &middot; github.com/quarkusio/quarkus-skills</p>
+    <div class="slide-number">14 / 14</div>
+  </div>
+
+</div>
+
+<!-- Controls -->
+<div class="controls">
+  <button onclick="prev()">&#9664; Prev</button>
+  <button onclick="next()">Next &#9654;</button>
+</div>
+
+<script>
+  let current = 0;
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+
+  function show(n) {
+    slides[current].classList.remove('active');
+    current = (n + total) % total;
+    slides[current].classList.add('active');
+  }
+
+  function next() { show(current + 1); }
+  function prev() { show(current - 1); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prev(); }
+    if (e.key === 'Home') { e.preventDefault(); show(0); }
+    if (e.key === 'End') { e.preventDefault(); show(total - 1); }
+  });
+</script>
+
+</body>
+</html>
