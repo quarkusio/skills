@@ -182,7 +182,7 @@
                 <span class="highlight">We work to improve de developer experience</span>  with a focus on Spring Boot developers than wants to bring their applications to the Cloud but not only.
             </div>
             <aside class="notes">
-                Quick intro. I'm Aurea Munoz and I work with Charles Moulliard on the Quarkus team. What's relevant here is our background — both of us come from productizing Spring Boot. We know Spring inside-out, and we know what it costs to migrate. Migration is the #1 friction point for Quarkus adoption. That's what motivated us to build this tool.
+                Quick intro. I'm Aurea Munoz and I work with Charles Moulliard on the Quarkus team. Both of us come from Red Hat Middleware runtimes and we work basically for improving developer experience, specially for Spring Boot developers that want to modernize their applications and bring them to the Cloud but not only.
             </aside>
         </section>
 
@@ -221,7 +221,7 @@
 
         <!-- Slide 4b: Why Quarkus? -->
         <section>
-            <h2>Why <span class="blue">Quarkus</span> over <span class="green">Spring Boot</span>?</h2>
+            <h2><span class="blue">Quarkus</span> vs <span class="green">Spring Boot</span></h2>
             <div class="brand-bar"></div>
             <p style="font-size: 0.7em; color: #666;">Real benchmarks · 8 cores, 14GB RAM, GraalVM CE 21.0.2 · <a href="https://github.com/edeandrea/quarkus-for-spring-devs-examples" style="color: var(--rh-teal);">source</a></p>
             <div class="two-col" style="margin-top: 16px;">
@@ -255,15 +255,15 @@
                 <br><span style="font-size: 0.85em;">Learn more: <a href="https://quarkus.io/spring/migrate/" style="color: var(--rh-teal);">quarkus.io/spring/migrate</a></span>
             </div>
             <aside class="notes">
-                So why would a customer want to migrate from Spring Boot to Quarkus? Let me show you real numbers. These benchmarks come from Eric Deandrea's quarkus-for-spring-devs project, running on 8 cores with 14GB of RAM.
+                So why migrate? Let me show you real numbers from the same application running on the same hardware.
 
-                In JVM mode — which is the most common deployment — Quarkus starts almost twice as fast, uses 36% less memory, and delivers 4.7 times more throughput. That throughput number is the headline: 30,000 requests per second versus 6,500. Same application, same hardware.
+                In JVM mode, the headline is throughput: Quarkus delivers 30,000 requests per second versus 6,500 for Spring Boot — almost 5 times more. It also starts twice as fast and uses 36% less memory.
 
-                In native mode the difference is even more dramatic — Quarkus starts in 135 milliseconds versus almost a full second for Spring Boot, and uses 65% less memory.
+                In native mode the gap widens further — 135 milliseconds to start versus almost a full second.
 
-                What does this mean in practice? Cloud cost. The same workload that needs a t3.small instance with Spring Boot fits comfortably in a t3.nano with Quarkus — that's roughly 8 times cheaper per instance. At enterprise scale with hundreds of microservices, that adds up fast.
+                What does this mean for cloud cost? Quarkus uses 4 times less memory, so it fits in a much smaller instance. And Spring Boot under load produces errors when memory is tight, so in practice you need two instances to match the reliability. The result: roughly 8 times cheaper per instance in the cloud. With hundreds of microservices, that adds up fast.
 
-                For more details on the migration path, we have a dedicated page at quarkus.io/spring/migrate.
+                More details on the migration path at quarkus.io/spring/migrate.
             </aside>
         </section>
 
@@ -329,7 +329,7 @@
                 </div>
                 <div class="card">
                     <h3>Open Source</h3>
-                    <p><code>quarkusio/quarkus-skills</code><br><br>Works with Claude Code, opencode, pi, and other AI agents. Published as a Claude Code plugin.</p>
+                    <p><code>quarkusio/quarkus-skills</code><br><br>Works with Claude Code, <span class="teal">IBM Bob</span>, opencode, pi, and other AI agents.</p>
                 </div>
                 <div class="card">
                     <h3>Two Strategies</h3>
@@ -337,7 +337,7 @@
                 </div>
             </div>
             <aside class="notes">
-                Let me give you a closer look at what the skill actually is. It's a set of structured instructions — think of it as encoding the expertise of a Quarkus migration consultant into a reusable tool. It tells the AI agent step by step how to analyze the Spring Boot project, which modules to migrate, what to check after each step. It's open source at quarkusio/quarkus-skills, published as a Claude Code plugin, and it supports two migration strategies — Spring Compatibility for low-risk migrations, and Full Quarkus for teams that want the full performance benefits.
+                Let me give you a closer look at what the skill actually is. It's a set of structured instructions — think of it as encoding the expertise of a Quarkus migration consultant into a reusable tool. It tells the AI agent step by step how to analyze the Spring Boot project, which modules to migrate, what to check after each step. It's open source at quarkusio/quarkus-skills, and it works with multiple AI agents — including IBM's own Bob, which is important because it means we can offer this as a fully IBM-supported solution. It also supports two migration strategies — Spring Compatibility for low-risk migrations, and Full Quarkus for teams that want the full performance benefits.
             </aside>
         </section>
 
@@ -443,6 +443,21 @@
             </aside>
         </section>
 
+        <!-- Demo -->
+        <section>
+            <h2>Demo: <span class="teal">IBM Bob</span> + Migration Skill</h2>
+            <div class="brand-bar"></div>
+            <p style="font-size: 0.75em; color: #666;">Migrating a Spring Boot app to Quarkus using IBM's AI coding agent</p>
+            <div style="text-align: center; margin-top: 16px;">
+                <video controls style="max-width: 90%; max-height: 480px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1);">
+                    <source src="migrate-sb-to-quarkus-ibm-bob.mp4" type="video/mp4">
+                </video>
+            </div>
+            <aside class="notes">
+                Let me show you a quick demo. This is IBM Bob — our own AI coding agent — running the migration skill on a Spring Boot application. You can see how the agent follows the skill instructions step by step: it analyzes the project, chooses the strategy, migrates the build file, then the code, then the tests, compiling after each module. The whole process is automated — the developer just watches and reviews the result. This is important because it means we can offer customers an end-to-end IBM solution: IBM's AI agent running IBM's migration skill to move to IBM's Java framework.
+            </aside>
+        </section>
+
         <!-- Slide 8: Validated -->
         <section>
             <h2>Validated Against Real Migration</h2>
@@ -468,6 +483,8 @@
             </aside>
         </section>
 
+
+
         <!-- Slide 9: IBM Research -->
         <section>
             <h2>IBM Research Collaboration</h2>
@@ -478,11 +495,6 @@
                     <h3>Deterministic Validators</h3>
                     <p>8 Java CLI validators that verify each migration phase <em>without relying on AI</em>.</p>
                     <p class="dimmed" style="margin-top: 8px;">Config, Database, Messaging, Persistence, ProjectSetup, REST, Service, UI</p>
-                </div>
-                <div class="card ibm">
-                    <h3>Layer-by-Layer</h3>
-                    <p>12 migration phases, each with its own specialized agent prompt and validation step.</p>
-                    <p class="dimmed" style="margin-top: 8px;">Database &rarr; Persistence &rarr; Service &rarr; Messaging &rarr; REST &rarr; Views &rarr; Config</p>
                 </div>
                 <div class="card ibm">
                     <h3>Static Analysis</h3>
@@ -497,7 +509,8 @@
                 <span class="flow-step">Spring compat mode (added after our review)</span>
             </div>
             <aside class="notes">
-                Now, here's where it gets really interesting. IBM Research — George Safta's team — has contributed a significant enhancement in PR 37. They bring three key innovations. First, deterministic validators: Java CLI tools that verify each migration phase without relying on the AI. Did the persistence layer migrate correctly? The validator checks programmatically. Second, a layer-by-layer approach: instead of migrating everything at once, they break it into 12 phases — database, persistence, services, messaging, REST, views, config — each validated independently. Third, they use IBM's CodeAnalyzer for static analysis of the source code before migration.
+                Now, here's where it gets really interesting. IBM Research — George Safta's team — has contributed a significant enhancement in PR 37. They bring three key innovations. First, deterministic validators: Java CLI tools that verify each migration phase without relying on the AI. Did the code module migrate correctly? The validator checks programmatically. They also used IBM's CodeAnalyzer for static analysis of the source code before migration.
+                Currently we are working together to merge both their approach and ours in order to propose in one only skill with the best of two worlds.
             </aside>
         </section>
 
@@ -574,9 +587,9 @@
                 <span class="highlight">Goal:</span> mtool handles the mechanical work &rarr; AI focuses on what truly needs intelligence &rarr; migrations become <span class="highlight">cheaper and more reproducible</span>
             </div>
             <aside class="notes">
-                Now let me talk about where we're heading. Pure AI migration works, as you've seen, but we want to make it cheaper and more deterministic. That's where mtool comes in. mtool is a deterministic tool — no AI involved — that analyzes a Spring Boot project and applies automated transformations: dependency mapping, import renaming, annotation swapping. The things that have a clear, mechanical rule. Then the AI skill handles what mtool can't: understanding controller logic, converting templates, making contextual decisions about migration strategy. With mtool doing the heavy lifting upfront, the AI has better context and makes fewer mistakes. And the deterministic parts are reproducible — same input, same output, every time.
+                Now let me talk about where we're heading. Pure AI migration works, as you've seen, but we want to make it cheaper and more deterministic. That's where mtool comes in. mtool is a deterministic tool that performs a deep analysis of the Spring Boot project — dependencies, annotations, patterns, code structure. The key idea is that mtool gives superpowers to our AI skill. It provides the agent with a rich, structured analysis of the codebase before the migration even starts. The AI doesn't have to guess or discover what's in the project — mtool tells it exactly what's there. With that better context upfront, the AI makes fewer mistakes and the migration becomes cheaper because the agent needs fewer tokens to reason about the code. And the analysis is reproducible — same input, same output, every time.
 
-                Roadmap: mtool as pre-migration step + IBM Research validators as post-migration step = deterministic sandwich around the AI.
+                Roadmap: mtool as pre-migration step feeding context to the AI, plus IBM Research validators as post-migration step verifying the result = a deterministic sandwich around the AI.
             </aside>
         </section>
 
