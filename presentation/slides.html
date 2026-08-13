@@ -219,6 +219,54 @@
             </aside>
         </section>
 
+        <!-- Slide 4b: Why Quarkus? -->
+        <section>
+            <h2>Why <span class="blue">Quarkus</span> over <span class="green">Spring Boot</span>?</h2>
+            <div class="brand-bar"></div>
+            <p style="font-size: 0.7em; color: #666;">Real benchmarks · 8 cores, 14GB RAM, GraalVM CE 21.0.2 · <a href="https://github.com/edeandrea/quarkus-for-spring-devs-examples" style="color: var(--rh-teal);">source</a></p>
+            <div class="two-col" style="margin-top: 16px;">
+                <div>
+                    <h3 style="font-size: 0.8em;">JVM mode</h3>
+                    <table>
+                        <thead><tr><th>Metric</th><th><span class="blue">Quarkus</span></th><th><span class="green">Spring Boot</span></th><th>Ratio</th></tr></thead>
+                        <tbody>
+                            <tr><td>Time to 1st request</td><td><span class="highlight">4.6 s</span></td><td>8.7 s</td><td><span class="blue">1.9x faster</span></td></tr>
+                            <tr><td>RSS after startup</td><td><span class="highlight">192 MB</span></td><td>298 MB</td><td><span class="blue">36% less</span></td></tr>
+                            <tr><td>Throughput</td><td><span class="highlight">30,397 req/s</span></td><td>6,495 req/s</td><td><span class="blue">4.7x more</span></td></tr>
+                            <tr><td>Throughput density</td><td><span class="highlight">35.8 req/s/MB</span></td><td>7.9 req/s/MB</td><td><span class="blue">4.5x more</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div>
+                    <h3 style="font-size: 0.8em;">Native mode</h3>
+                    <table>
+                        <thead><tr><th>Metric</th><th><span class="blue">Quarkus</span></th><th><span class="green">Spring Boot</span></th><th>Ratio</th></tr></thead>
+                        <tbody>
+                            <tr><td>Time to 1st request</td><td><span class="highlight">135 ms</span></td><td>916 ms</td><td><span class="blue">6.8x faster</span></td></tr>
+                            <tr><td>RSS after startup</td><td><span class="highlight">71 MB</span></td><td>205 MB</td><td><span class="blue">65% less</span></td></tr>
+                            <tr><td>Throughput</td><td><span class="highlight">16,753 req/s</span></td><td>6,146 req/s</td><td><span class="blue">2.7x more</span></td></tr>
+                            <tr><td>Binary size</td><td><span class="highlight">91 MB</span></td><td>157 MB</td><td><span class="blue">42% less</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="callout teal-callout" style="text-align: center; margin-top: 12px;">
+                <span class="highlight">Cloud impact:</span> Spring Boot needs a t3.small ($15/month) · Quarkus fits in a t3.nano ($4/month) · <span class="teal">~8x cheaper per instance</span>
+                <br><span style="font-size: 0.85em;">Learn more: <a href="https://quarkus.io/spring/migrate/" style="color: var(--rh-teal);">quarkus.io/spring/migrate</a></span>
+            </div>
+            <aside class="notes">
+                So why would a customer want to migrate from Spring Boot to Quarkus? Let me show you real numbers. These benchmarks come from Eric Deandrea's quarkus-for-spring-devs project, running on 8 cores with 14GB of RAM.
+
+                In JVM mode — which is the most common deployment — Quarkus starts almost twice as fast, uses 36% less memory, and delivers 4.7 times more throughput. That throughput number is the headline: 30,000 requests per second versus 6,500. Same application, same hardware.
+
+                In native mode the difference is even more dramatic — Quarkus starts in 135 milliseconds versus almost a full second for Spring Boot, and uses 65% less memory.
+
+                What does this mean in practice? Cloud cost. The same workload that needs a t3.small instance with Spring Boot fits comfortably in a t3.nano with Quarkus — that's roughly 8 times cheaper per instance. At enterprise scale with hundreds of microservices, that adds up fast.
+
+                For more details on the migration path, we have a dedicated page at quarkus.io/spring/migrate.
+            </aside>
+        </section>
+
         <!-- Slide 5: The Migration Problem (general) -->
         <section>
             <h2>The Migration Problem</h2>
