@@ -16,7 +16,7 @@
 
 ## Slide 2: About Us
 
-> **What to say**: "Quick intro. I'm Aurea Munoz and I work with Charles Moulliard on the Quarkus team. What's relevant here is our background — both of us come from productizing Spring Boot. We know Spring inside-out, and we know what it costs to migrate because we've lived both sides. That's what motivated us to build this tool."
+> **What to say**: "Quick intro. I'm Aurea Munoz and I work with Charles Moulliard on the Quarkus team. What's relevant here is our background — both of us come from productizing Spring Boot. We know Spring inside-out, and we know what it costs to migrate. Migration is the #1 friction point for Quarkus adoption. That's what motivated us to build this tool."
 
 **Key points**:
 - Aurea Munoz + Charles Moulliard, Quarkus team at IBM
@@ -102,7 +102,7 @@
 
 ## Slide 8: Validated Against Real Migration
 
-> **What to say**: "We didn't just test against toy apps. We ran the skill against the spring-quarkus-perf-comparison repository — that's a real app maintained by our performance team, with an existing bash script that does the same migration manually. The result? The skill produced functionally identical code, plus two improvements: it migrated the tests instead of deleting them, and it used the correct Quarkus naming convention for SQL files. The Java source was byte-for-byte identical."
+> **What to say**: "We didn't just test against hello-world apps. We ran the skill against the spring-quarkus-perf-comparison repository — that's a real app maintained by our performance team, with an existing bash script that does the same migration manually. The result? The skill produced functionally identical code, plus two improvements: it migrated the tests instead of deleting them, and it used the correct Quarkus naming convention for SQL files. The Java source was byte-for-byte identical."
 
 **Key points**:
 - Compared against Holly's `spring-conversion.sh` script
