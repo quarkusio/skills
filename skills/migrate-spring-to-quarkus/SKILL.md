@@ -110,7 +110,7 @@ FOR module IN [build, code, frontend, testing, cleanup]:
   3. LOAD — read the module file and relevant reference files
   4. EXECUTE — follow the module instructions, adapting to the chosen strategy
   5. COMPILE — run the project's compile command (`./mvnw clean compile -DskipTests` for Maven, `./gradlew clean compileJava -x test` for Gradle)
-     Fails → diagnose and fix before proceeding
+     Fails → follow [compile-fix](modules/compile-fix.md)
   6. LOG — mark checkbox as done
 ```
 
