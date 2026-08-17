@@ -8,7 +8,9 @@ Resolve compilation failures that arise after migrating Spring Boot code to Quar
 2. Fix one file at a time.
 3. Recompile after each file fix to verify the change reduced the error count.
 4. Repeat up to **3 attempts per file**.
-5. If a file still fails after 3 attempts → mark it `MANUAL_REVIEW_REQUIRED` (see below), log the error, and ask the user whether to continue with remaining files or stop.
+5. If a file still fails after 3 attempts → emit the `MANUAL_REVIEW_REQUIRED` block (see below), then act according to mode:
+   - **`interactive`** — ask the user: *"I was unable to automatically fix `File.java`. Would you like me to continue migrating the remaining files, or stop here?"* Wait for the response before proceeding.
+   - **`autonomous`** — log the failure internally and continue automatically to the next file. Do **not** pause or ask. All failures will be surfaced in the final Migration Report.
 
 ## Common Error Patterns
 
@@ -65,7 +67,7 @@ List<Todo> findByCompleted(boolean completed) {
 
 ## MANUAL_REVIEW_REQUIRED
 
-When a file cannot be fixed after 3 attempts, emit:
+When a file cannot be fixed after 3 attempts, always emit:
 
 ```
 MANUAL_REVIEW_REQUIRED: <relative/path/to/File.java>
@@ -73,8 +75,7 @@ Reason: <paste the compiler error here>
 Attempted fixes: <brief description of what was tried>
 ```
 
-Then ask the user:
-> "I was unable to automatically fix `File.java`. Would you like me to continue migrating the remaining files, or stop here?"
+Then act according to the current mode (see **Strategy** step 5 above).
 
 ## Watch out
 

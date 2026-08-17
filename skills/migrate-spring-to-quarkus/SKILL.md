@@ -56,6 +56,7 @@ Resolve the strategy using the following priority (first match wins):
    ```yaml
    # .quarkus-migration.yml
    strategy: spring-compat   # or full-quarkus
+   mode: interactive         # interactive (default) | autonomous
    ```
 3. **Ask the user** — if neither of the above provided a strategy, ask the user to choose:
    - **Spring compatibility** (`spring-compat`, recommended): Use `quarkus-spring-web`, `quarkus-spring-data-jpa`, etc. Minimal code changes.
@@ -64,6 +65,21 @@ Resolve the strategy using the following priority (first match wins):
    **Stop here and wait for the user's response before continuing.** Do not ask about git workflow or anything else in the same message.
 
 If the strategy was resolved from an argument or config file, log: `Strategy: <value> (source: <argument|config file>)` and continue without asking.
+
+### Mode selection
+
+Resolve the execution mode using the following priority (first match wins):
+
+1. **Skill argument** — if the skill was invoked with a `mode` argument (`interactive` or `autonomous`), use it directly.
+2. **Project config file** — check `.quarkus-migration.yml` for a `mode` field. Use that value if present.
+3. **Default** — `interactive`.
+
+Log: `Mode: <value> (source: <argument|config file|default>)` and carry this value throughout the migration.
+
+| Mode | Behaviour |
+|---|---|
+| `interactive` | Pauses at decision points and asks the user before continuing. |
+| `autonomous` | Never pauses. On unresolvable failures, logs them and continues. All failures are surfaced in the Migration Report. |
 
 ## Step 2: Git branch (optional)
 
@@ -99,20 +115,20 @@ After the user has chosen a strategy, check if the target project is a git repos
 
 ### Execution Protocol
 
-```
 FOR module IN [build, code, frontend, testing, cleanup]:
 
-  1. EVALUATE — inspect the project for the gate condition
-  2. DECIDE
-     IF gate == ALWAYS → proceed to step 3
-     IF gate == PASS   → proceed to step 3
-     IF gate == SKIP   → log "Module {name}: SKIPPED — {reason}", mark checkbox, continue
-  3. LOAD — read the module file and relevant reference files
-  4. EXECUTE — follow the module instructions, adapting to the chosen strategy
-  5. COMPILE — run the project's compile command (`./mvnw clean compile -DskipTests` for Maven, `./gradlew clean compileJava -x test` for Gradle)
-     Fails → follow [compile-fix](modules/compile-fix.md)
-  6. LOG — mark checkbox as done
-```
+1. **EVALUATE** — inspect the project for the gate condition
+2. **DECIDE**
+   - IF gate == ALWAYS → proceed to step 3
+   - IF gate == PASS → proceed to step 3
+   - IF gate == SKIP → log `Module {name}: SKIPPED — {reason}`, mark checkbox, continue
+3. **LOAD** — read the module file and relevant reference files
+4. **EXECUTE** — follow the module instructions, adapting to the chosen strategy
+5. **COMPILE** — run the project's compile command:
+   - Maven: `./mvnw clean compile -DskipTests`
+   - Gradle: `./gradlew clean compileJava -x test`
+   - If compilation fails → follow [compile-fix](modules/compile-fix.md)
+6. **LOG** — mark checkbox as done
 
 ### Running Individual Modules
 
@@ -181,6 +197,10 @@ Present the review as a structured report:
 | Tests pass | PASS/FAIL | |
 | Starts up | PASS/FAIL | |
 | No leftover templates | PASS/FAIL | |
+
+### Compile Fix Failures (MANUAL_REVIEW_REQUIRED)
+| File | Compiler Error | Fixes Attempted |
+|------|---------------|-----------------|
 
 ### Unmigrated Code (TODOs)
 | File | Line | What | Why not migrated |
