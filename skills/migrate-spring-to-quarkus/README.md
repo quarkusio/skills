@@ -31,29 +31,38 @@ Add a `.quarkus-migration.yml` file to your project root to prepare the migratio
 
 ```yaml
 # .quarkus-migration.yml
-strategy: spring-compat   # or full-quarkus
+strategy: spring-compat   # spring-compat | full-quarkus
+mode: interactive         # interactive (default) | autonomous
 ```
 
-When this file is present, the skill skips the strategy prompt and uses the configured value. This is useful for:
+When this file is present, the skill skips the strategy prompt and uses the configured values. This is useful for:
 - CI/CD pipelines or automated test runs where no human is present
 - Teams that have already decided on a strategy and don't want to be asked every time
 - Reproducing migrations with consistent settings
 
+#### `mode` values
+
+| Value | Behaviour |
+|---|---|
+| `interactive` (default) | Pauses at decision points and asks the user. On an unfixable file, the agent stops and waits for confirmation before continuing. |
+| `autonomous` | Never pauses. Unfixable files are logged and skipped automatically. All failures are collected and surfaced in the final Migration Report. |
+
 ### Skill argument
 
-You can also pass the strategy directly when invoking the skill:
+You can also pass strategy or mode directly when invoking the skill:
 
 ```
 Migrate this project to Quarkus using the compatibility migration strategy
+Migrate this project to Quarkus autonomously
 ```
 
 ### Priority order
 
-If multiple sources provide a strategy, the first match wins:
+If multiple sources provide a value, the first match wins (applies to both `strategy` and `mode`):
 
 1. Skill argument (highest priority)
 2. `.quarkus-migration.yml` config file
-3. Interactive prompt (fallback)
+3. Default / interactive prompt (fallback)
 
 ## How It Works
 
