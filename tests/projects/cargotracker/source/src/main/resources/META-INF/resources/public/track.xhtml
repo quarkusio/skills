@@ -1,0 +1,98 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://xmlns.jcp.org/jsf/html"
+  xmlns:ui="http://xmlns.jcp.org/jsf/facelets" xmlns:p="http://primefaces.org/ui"
+  xmlns:f="http://java.sun.com/jsf/core">
+<ui:composition template="/templates/common/public.xhtml">
+  <ui:define name="title">Track Cargo</ui:define>
+  <ui:define name="content">
+    <div class="ui-grid-col-2" id="leftCol"></div>
+    <div class="ui-grid-col-8" id="container" style="display: none">
+      <br />
+      <div class="ui-g ui-g-12">
+        <div class="ui-g-6 ui-g-offset-3">
+          <h:form id="trackingForm">
+            <h:panelGrid columns="3" cellpadding="15">
+              <p>Enter your tracking ID:</p>
+              <p:inputText id="trackingIdInput" value="#{publicTrack.trackingId}" required="true" placeholder="XYZ789"
+                title="Valid tracking ID" />
+              <h:commandButton value="Track!" action="#{publicTrack.onTrackById()}">
+                <f:ajax execute="trackingIdInput" render="cargo-status" />
+              </h:commandButton>
+            </h:panelGrid>
+          </h:form>
+        </div>
+      </div>
+      <div class="ui-g-12">
+        <p:separator />
+      </div>
+      <h:panelGroup id="cargo-status">
+        <div class="ui-g-12">
+          <h:panelGroup rendered="#{not empty publicTrack.cargo}">
+            <div id="result">
+              <p>
+                Cargo <strong>#{publicTrack.cargo.trackingId}</strong> is
+                currently <strong>#{publicTrack.cargo.statusText}</strong>
+              </p>
+
+              <p>
+                Estimated time of arrival in <strong>#{publicTrack.cargo.destinationName}</strong>:
+                #{publicTrack.cargo.eta}
+              </p>
+              <ui:fragment rendered="#{not empty publicTrack.cargo.nextExpectedActivity}">
+                <p>#{publicTrack.cargo.nextExpectedActivity}</p>
+              </ui:fragment>
+
+              <p:panel rendered="#{publicTrack.cargo.misdirected}">
+                <p>
+                  <i class="fa fa-exclamation-triangle" style="color: #9b2332"></i>
+                  Cargo is misdirected.
+                </p>
+              </p:panel>
+            </div>
+          </h:panelGroup>
+
+          <p:outputLabel value="Cargo with tracking ID #{publicTrack.trackingId} not found."
+            rendered="#{empty publicTrack.cargo and not empty publicTrack.trackingId}" />
+        </div>
+
+        <h:panelGroup rendered="#{not empty publicTrack.cargo}">
+          <div class="ui-g ui-g-12">
+            <div class="ui-g-3">
+              <p:outputLabel value="Handling History" style="font-size: 2em; font-weight: bold" />
+            </div>
+
+            <div class="ui-g-12">
+              <p:separator />
+              <br /> <br />
+            </div>
+
+            <div class="ui-g-12">
+              <ui:repeat value="#{publicTrack.cargo.events}" var="leg">
+                <div>
+                  <ui:fragment rendered="#{leg.expected}">
+                    &#160;&#160;<i class="fa fa-check" style="color: green" />&#160;#{leg.description}, at #{leg.time}
+                  </ui:fragment>
+                  <ui:fragment rendered="#{!leg.expected}">
+                    &#160;&#160;<em class="fa fa-flag" style="color: #9b2332" />&#160;#{leg.description}, at #{leg.time}
+                  </ui:fragment>
+                </div>
+              </ui:repeat>
+
+              <p:outputLabel value="There are no events recorded for the tracking ID #{publicTrack.cargo.trackingId}."
+                rendered="#{empty publicTrack.cargo.events}" />
+            </div>
+          </div>
+
+          <div id="map" class="ui-g-12">
+            <iframe class="mapFrame" width="100%" height="960"
+              src="#{request.contextPath}/public/mapFrame.xhtml?cargo=#{publicTrack.cargoAsJson}" />
+          </div>
+        </h:panelGroup>
+      </h:panelGroup>
+    </div>
+    <h:outputScript name="js/topbar.min.js" />
+    <h:outputScript name="js/topbar.js" />
+    <h:outputScript name="js/progress.js" />
+  </ui:define>
+</ui:composition>
+
+</html>

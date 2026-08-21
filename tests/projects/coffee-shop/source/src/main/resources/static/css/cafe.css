@@ -1,0 +1,22 @@
+
+.input-cafe{
+    font-size: 16px;
+    font-weight: 500;
+    font-family: 'Montserrat', sans-serif;
+    line-height: 28px;
+    margin: 10px 0;
+    color: #3a3a3a;
+}
+
+.modal-dialog{
+    max-width: 600px;
+}
+
+.modal-header{
+    display: flex;
+}
+
+.modal-header .close{
+    position: absolute;
+    right:15px;
+}

@@ -1,0 +1,1 @@
+INSERT INTO application_settings (id, sample_loaded) VALUES (1, FALSE);

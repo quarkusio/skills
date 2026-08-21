@@ -1,0 +1,32 @@
+import { beforeEach, describe, expect, it, vitest } from 'vitest';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { of } from 'rxjs';
+
+import { ProfileInfo } from 'app/layouts/profiles/profile-info.model';
+import { ProfileService } from 'app/layouts/profiles/profile.service';
+
+import PageRibbon from './page-ribbon';
+
+describe('Page Ribbon Component', () => {
+  let comp: PageRibbon;
+  let fixture: ComponentFixture<PageRibbon>;
+  let profileService: ProfileService;
+
+  beforeEach(() => {
+    fixture = TestBed.createComponent(PageRibbon);
+    comp = fixture.componentInstance;
+    profileService = TestBed.inject(ProfileService);
+  });
+
+  it('should call profileService.getProfileInfo on init', () => {
+    // GIVEN
+    vitest.spyOn(profileService, 'getProfileInfo').mockReturnValue(of(new ProfileInfo()));
+
+    // WHEN
+    comp.ngOnInit();
+
+    // THEN
+    expect(profileService.getProfileInfo).toHaveBeenCalled();
+  });
+});

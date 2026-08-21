@@ -1,5 +1,7 @@
 package io.quarkus.migration;
 
+import io.quarkus.migration.runner.AgentRunner;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -21,6 +23,11 @@ public class MigrationResult {
     private long totalTokens;
     private double totalCost;
     private int apiCalls;
+    private int toolCalls;
+    private long inputTokens;
+    private long outputTokens;
+    private long cacheRead;
+    private long cacheWrite;
     private List<String> sessionFiles;
     private String workDir;
     private String runName;
@@ -28,6 +35,11 @@ public class MigrationResult {
     private String review;
     private long reviewTokens;
     private double reviewCost;
+    private String prompt;
+    private String userProvider;
+    private String userModel;
+    private String projectType;
+    private List<AgentRunner.ModelUsage> modelUsages = List.of();
 
     public MigrationResult(String agent, String project, String model, String strategy, SkillReference skillRef) {
         this.agent = agent;
@@ -83,6 +95,21 @@ public class MigrationResult {
     public int getApiCalls() { return apiCalls; }
     public void setApiCalls(int apiCalls) { this.apiCalls = apiCalls; }
 
+    public int getToolCalls() { return toolCalls; }
+    public void setToolCalls(int toolCalls) { this.toolCalls = toolCalls; }
+
+    public long getInputTokens() { return inputTokens; }
+    public void setInputTokens(long inputTokens) { this.inputTokens = inputTokens; }
+
+    public long getOutputTokens() { return outputTokens; }
+    public void setOutputTokens(long outputTokens) { this.outputTokens = outputTokens; }
+
+    public long getCacheRead() { return cacheRead; }
+    public void setCacheRead(long cacheRead) { this.cacheRead = cacheRead; }
+
+    public long getCacheWrite() { return cacheWrite; }
+    public void setCacheWrite(long cacheWrite) { this.cacheWrite = cacheWrite; }
+
     public List<String> getSessionFiles() { return sessionFiles; }
     public void setSessionFiles(List<String> sessionFiles) { this.sessionFiles = sessionFiles; }
 
@@ -104,6 +131,22 @@ public class MigrationResult {
     public double getReviewCost() { return reviewCost; }
     public void setReviewCost(double reviewCost) { this.reviewCost = reviewCost; }
 
+    public String getPrompt() { return prompt; }
+    public void setPrompt(String prompt) { this.prompt = prompt; }
+
+    public String getUserProvider() { return userProvider; }
+    public void setUserProvider(String userProvider) { this.userProvider = userProvider; }
+
+    public String getUserModel() { return userModel; }
+    public void setUserModel(String userModel) { this.userModel = userModel; }
+
+    public String getProjectType() { return projectType; }
+    public void setProjectType(String projectType) { this.projectType = projectType; }
+
+    public List<AgentRunner.ModelUsage> getModelUsages() { return modelUsages; }
+    public void setModelUsages(List<AgentRunner.ModelUsage> modelUsages) { this.modelUsages = modelUsages; }
+
+    public String getAgent() { return agent; }
     public String getProject() { return project; }
     public String getModel() { return model; }
     public String getStrategy() { return strategy; }
@@ -117,7 +160,10 @@ public class MigrationResult {
         sb.append("Migration Result: %s [%s]\n".formatted(project, score()));
         sb.append("  agent:    %s\n".formatted(agent));
         sb.append("  model:    %s\n".formatted(model));
-        sb.append("  strategy: %s\n".formatted(strategy));
+        if ("spring-boot".equals(projectType) && skillRef.name() != null
+                && skillRef.name().toLowerCase().contains("migrate")) {
+            sb.append("  strategy: %s\n".formatted(strategy));
+        }
         sb.append("  skill:    %s\n".formatted(skillRef.name()));
         if (skillRef.isRemote()) {
             sb.append("  skill-url: %s\n".formatted(skillRef.url()));
@@ -127,6 +173,7 @@ public class MigrationResult {
         sb.append("  tokens:   %d\n".formatted(totalTokens));
         sb.append("  cost:     $%.4f\n".formatted(totalCost));
         sb.append("  calls:    %d\n".formatted(apiCalls));
+        sb.append("  tools:    %d\n".formatted(toolCalls));
         sb.append("  checks:\n");
         checks.forEach((k, v) -> sb.append("    %s %s\n".formatted(v ? "✅" : "❌", k)));
         sb.append("  workdir:  %s\n".formatted(workDir));

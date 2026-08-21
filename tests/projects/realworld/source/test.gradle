@@ -1,0 +1,77 @@
+test {
+    useJUnitPlatform()
+    finalizedBy 'jacocoTestReport'
+}
+
+jacocoTestReport {
+    reports {
+        html.enabled true
+        xml.enabled true
+    }
+    finalizedBy 'jacocoTestCoverageVerification'
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            element = 'PACKAGE'
+
+            limit {
+                counter = 'CLASS'
+                value = 'COVEREDRATIO'
+                maximum = 1.00
+            }
+
+            excludes = [
+                    'io.github.raeperd.realworld',
+            ]
+        }
+        rule {
+            element = "CLASS"
+
+            limit {
+                counter = 'METHOD'
+                value = 'COVEREDRATIO'
+                minimum = 1.00
+            }
+
+            excludes = [
+                    'io.github.raeperd.realworld.RealWorldApplication',
+                    'io.github.raeperd.realworld.application.security.JWTAuthenticationFilter.JWT'
+            ]
+        }
+        rule {
+            element = "METHOD"
+
+            limit {
+                counter = 'INSTRUCTION'
+                value = 'COVEREDRATIO'
+                minimum = 1.00
+            }
+
+            excludes = [
+                    'io.github.raeperd.realworld.**main**',
+                    'io.github.raeperd.realworld.**equals(java.lang.Object)',
+                    'io.github.raeperd.realworld.application.security.JWTAuthenticationFilter.JWT.getCredentials()'
+            ]
+        }
+        rule {
+            element = "CLASS"
+
+            limit {
+                counter = 'LINE'
+                value = 'TOTALCOUNT'
+                maximum = 100
+            }
+        }
+        rule {
+            element = "METHOD"
+
+            limit {
+                counter = 'LINE'
+                value = 'TOTALCOUNT'
+                maximum = 15
+            }
+        }
+    }
+}

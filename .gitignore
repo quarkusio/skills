@@ -8,3 +8,8 @@ target/
 .vscode/
 *.class
 *.log
+
+tests/.opencode/
+tests/reports/
+tests/projects/*/source/*-report_*.json
+tests/.venv/

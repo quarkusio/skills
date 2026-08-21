@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"><!-- CHANGED: added Thymeleaf namespace -->
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="format-detection" content="telephone=no">
+    <title>Quarkus Coffee Shop</title>
+
+    <!-- Favicon & PWA -->
+    <!-- CHANGED: use Thymeleaf URL syntax so these resolve under Spring's /static/ -->
+    <link rel="apple-touch-icon" sizes="180x180" th:href="@{/favicon/apple-touch-icon.png}" href="/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" th:href="@{/favicon/favicon-32x32.png}" href="/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" th:href="@{/favicon/favicon-16x16.png}" href="/favicon/favicon-16x16.png">
+    <link rel="manifest" th:href="@{/favicon/site.webmanifest}" href="/favicon/site.webmanifest">
+    <link rel="mask-icon" th:href="@{/favicon/safari-pinned-tab.svg}" href="/favicon/safari-pinned-tab.svg" color="#5bbad5">
+    <link rel="shortcut icon" th:href="@{/favicon/favicon.ico}" href="/favicon/favicon.ico">
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="msapplication-config" th:href="@{/favicon/browserconfig.xml}" href="/favicon/browserconfig.xml">
+    <meta name="theme-color" content="#ffffff">
+
+    <!-- CSS -->
+    <!-- CHANGED: local assets now use Thymeleaf @{} so they work under any context path -->
+    <link th:href="@{/css/bootstrap.min.css}" href="/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/css/styles.css}" href="/css/styles.css" rel="stylesheet">
+    <link th:href="@{/css/custom.css}" href="/css/custom.css" rel="stylesheet">
+    <link th:href="@{/css/cafe.css}" href="/css/cafe.css" rel="stylesheet" />
+    <link th:href="@{/css/toastr.css}" href="/css/toastr.css" rel="stylesheet">
+
+    <!-- External (unchanged) -->
+    <link href="https://fonts.googleapis.com/css?family=Cookie%7cMontserrat:300,400,500,600,700%7cRoboto:300,400,500,700" rel="stylesheet">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ekko-lightbox/5.3.0/ekko-lightbox.css">
+
+    <!-- HTML5 shim for IE (unchanged) -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+
+<body>
+<!-- CHANGED: Bootstrap 5 navbar markup/classes + data-bs-* -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <div class="container">
+        <a class="navbar-brand active" href="#banner"><i class="fa fa-coffee"></i> Quarkus Coffee Shop</a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
+                <li class="nav-item"><a class="nav-link" href="#menu">Menu</a></li>
+                <li class="nav-item"><a class="nav-link" href="#gallery">Gallery</a></li>
+                <li class="nav-item"><a class="nav-link" href="#team">Team</a></li>
+                <li class="nav-item"><a class="nav-link" href="#testimonials">Twitter</a></li>
+                <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
+                <li id="rewards_link" class="nav-item">
+                    <!-- CHANGED: data-bs-* required by Bootstrap 5 -->
+                    <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#rewardsModal">Rewards</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<span id="banner"></span>
+<section class="banner">
+    <div class="jumbotron">
+        <div class="container">
+            <div class="content">
+                <h5>Established 2020</h5>
+                <h1>Quarkus Coffee Shop</h1>
+                <a href="#menu" class="btn">Place an Order</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CHANGED: Bootstrap 5 modal markup requires .fade + tabindex + btn-close + data-bs-dismiss -->
+<div class="modal fade" id="rewardsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form id="rewards_modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Rewards Info</h4>
+                    <button id="btn_cancel" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body flex-fill d-inline-flex">
+                    <div class="flex-fill d-inline-flex justify-content-end form-group">
+                        <!-- CHANGED: mr-* -> me-* in Bootstrap 5 -->
+                        <label for="rewards_id" class="me-sm-2 input-cafe text-nowrap mb-2">Rewards email:</label>
+                        <input type="email" required class="form-control mb-2 me-sm-2"
+                               placeholder="Enter rewards email" id="rewards_id" rewards_id="rewards_id">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="flex-fill">
+                        <!-- CHANGED: pull-right -> float-end (Bootstrap 5) -->
+                        <button type="submit" id="rewards_entered" class="btn-sm btn-primary float-end">Done</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<span class="anchor" id="about"></span>
+<section class="about">
+    <div class="container padding-2x">
+        <div class="row text-wrap">
+            <div class="col-sm-12">
+                <h3 class="text-center">Welcome to Quarkus, Kafka, Kubernetes, and Coffee</h3>
+                <hr>
+                <p class="text-center">Quarkus is a Kubernetes Native Java stack tailored for OpenJDK HotSpot and GraalVM, crafted from the best of breed Java libraries and standards.</p>
+            </div>
+        </div>
+        <div class="row about-info">
+            <div class="col-sm-12 col-md-6">
+                <div class="box wow fadeIn" data-wow-duration="400ms" data-wow-offset="10">
+                    <img th:src="@{/images/about.jpg}" src="/images/about.jpg" alt="about" /><!-- CHANGED: Thymeleaf URL -->
+                </div>
+            </div>
+            <div class="col-sm-12 col-md-6">
+                <div class="box wow fadeIn" data-wow-duration="800ms" data-wow-offset="10">
+                    <h5>Our Story</h5>
+                    <p>A Kubernetes Native Java stack tailored for OpenJDK HotSpot and GraalVM, crafted from the best of breed Java libraries and standards.</p>
+                    <p>Quarkus tailors your application for GraalVM and HotSpot. Amazingly fast boot time, incredibly low RSS memory (not just heap size!) offering near instant scale up and high density memory utilization in container orchestration platforms like Kubernetes.</p>
+                    <p>This application is demo showcasing an event driven Quarkus application that uses Apache Kafka for messaging.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<span class="anchor" id="menu"></span>
+<section class="menu">
+    <div class="container padding-2x">
+        <div class="row text-wrap">
+            <div class="col-sm-12">
+                <h3 class="text-center">Menu</h3>
+                <hr>
+                <p class="text-center">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi. </p>
+            </div>
+        </div>
+
+        <!-- CHANGED: Bootstrap 5 modal close/dismiss attributes -->
+        <div class="modal fade" id="myModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog" display="flex">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Current Order</h4>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <div class="pt-10">
+                            <ul class="list-group mt-10" id="current_order"></ul>
+                        </div>
+                        <div class="alert alert-success" role="alert" id="item_added_alert"></div>
+                    </div>
+
+                    <div class="modal-body">
+                        <div id="rewards_display" class="small text-muted" style="align-self: flex-end">
+                            <text> Rewards member</text>
+                            <text id="rewards_display_id"></text>
+                        </div>
+                        <form class="form-inline" action="" id="item_form">
+                            <div class="flex-fill d-inline-flex justify-content-between">
+                                <input type="hidden" id="item_type" name="item_type"/>
+                                <input type="hidden" id="item_price" name="item_price"/>
+                                <!-- CHANGED: mr-* -> me-* in Bootstrap 5 -->
+                                <label for="item" class="me-sm-2 input-cafe text-nowrap mb-2" id="item_label"></label>
+                                <input type="hidden" id="item" name="item"/>
+                                <label for="name" class="me-sm-2 input-cafe text-nowrap mb-2">for Name:</label>
+                                <input type="text" class="form-control mb-2 me-sm-2" placeholder="Enter name" id="name" name="name">
+                                <button type="submit" class="btn-sm btn-primary mb-2">Add</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="modal-footer">
+                        <form class="form-inline flex-fill" action="" id="order_form">
+                            <div class="flex-fill">
+                                <!-- CHANGED: data-dismiss -> data-bs-dismiss -->
+                                <button type="button" class="btn-sm btn-danger" data-bs-dismiss="modal">Back to Menu</button>
+                                <!-- CHANGED: pull-right -> float-end -->
+                                <button type="submit" class="btn-sm btn-primary float-end">Place Order</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- (menu items unchanged) -->
+        <!-- ... your long list of menu items stays as-is ... -->
+    </div>
+</section>
+
+<!-- statusboard, team, testimonials, gallery, reservation, contact, footer sections unchanged except image URLs below -->
+
+<span class="anchor" id="gallery"></span>
+<section class="gallery">
+    <div class="container padding-2x">
+        <div class="row text-wrap">
+            <div class="col-sm-12">
+                <h3 class="text-center">Gallery</h3>
+                <hr>
+                <p class="text-center">Pictures of café like things that lend an air of verisimillitude to our demo.</p>
+            </div>
+        </div>
+
+        <div class="row gallery-images justify-content-center">
+            <div class="col-md-12">
+                <div class="row">
+                    <!-- CHANGED: image URLs to Thymeleaf -->
+                    <div class="col-md-4 image wow fadeIn" data-wow-delay="100ms" >
+                        <a th:href="@{/images/gallery1.png}" href="/images/gallery1.png" data-toggle="lightbox" data-gallery="lava-gallery">
+                            <!-- CHANGED: img-responsive -> img-fluid in Bootstrap 5 -->
+                            <img th:src="@{/images/gallery1.png}" src="/images/gallery1.png" class="img-fluid" alt="gallery1">
+                        </a>
+                    </div>
+                    <div class="col-md-4 image wow fadeIn" data-wow-delay="200ms" >
+                        <a th:href="@{/images/gallery2.png}" href="/images/gallery2.png" data-toggle="lightbox" data-gallery="lava-gallery">
+                            <img th:src="@{/images/gallery2.png}" src="/images/gallery2.png" class="img-fluid" alt="gallery2">
+                        </a>
+                    </div>
+                    <div class="col-md-4 image wow fadeIn" data-wow-delay="300ms" >
+                        <a th:href="@{/images/gallery3.png}" href="/images/gallery3.png" data-toggle="lightbox" data-gallery="lava-gallery">
+                            <img th:src="@{/images/gallery3.png}" src="/images/gallery3.png" class="img-fluid" alt="gallery3">
+                        </a>
+                    </div>
+                    <!-- ...repeat the pattern for gallery4..9 -->
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="footer">
+    <div class="container">
+        <div class="row">
+            <!-- CHANGED: col-xs-12 removed in Bootstrap 5 -->
+            <div class="col-12">
+                <ul class="list-inline text-center margin-bottom">
+                    <li><a href=""><i class="fa fa-facebook"></i></a></li>
+                    <li><a href=""><i class="fa fa-twitter"></i></a></li>
+                    <li><a href=""><i class="fa fa-linkedin"></i></a></li>
+                    <li><a href=""><i class="fa fa-behance"></i></a></li>
+                </ul>
+                <p class="text-center">© 2018 <a href="http://hh-themes.com/" target="_blank">HH Themes</a></p>
+            </div>
+        </div>
+    </div>
+    <div id="back-to-top"><i class="fa fa-arrow-circle-up"></i></div>
+</section>
+
+<!-- CHANGED: invalid class value ".d-none" -->
+<div class="d-none"></div>
+
+<!-- CHANGED: Qute placeholders → Thymeleaf attribute binding -->
+<appvalues id="appvalues"
+           th:attr="data-store-id=${storeId}, data-stream-url=${streamUrl}"
+           data-store-id="{storeId}" data-stream-url="{streamUrl}">
+</appvalues>
+
+<!-- JS -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<!-- CHANGED: Bootstrap 5 requires bootstrap.bundle (includes Popper); BS5 doesn't use jQuery -->
+<script th:src="@{/js/bootstrap.bundle.min.js}" src="/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/jquery.matchHeight.js}" src="/js/jquery.matchHeight.js"></script>
+<script th:src="@{/js/jquery.cookie.js}" src="/js/jquery.cookie.js"></script>
+<script th:src="@{/js/custom.js}" src="/js/custom.js"></script>
+<script th:src="@{/js/cafe.js}" src="/js/cafe.js"></script>
+<script th:src="@{/js/wow.js}" src="/js/wow.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ekko-lightbox/5.3.0/ekko-lightbox.js"></script>
+<script th:src="@{/js/toastr.js}" src="/js/toastr.js"></script>
+
+<!-- CHANGED: expose streamUrl to JS using Thymeleaf inline JS -->
+<script th:inline="javascript">
+    // stream URL provided by the Spring controller
+    const STREAM_URL = /*[[${streamUrl}]]*/ '/api/dashboard/stream';
+</script>
+
+<script>
+    new WOW().init();
+</script>
+<script>
+    $(document).on('click', '[data-toggle="lightbox"]', function(event) {
+        event.preventDefault();
+        $(this).ekkoLightbox();
+    });
+</script>
+
+</body>
+</html>

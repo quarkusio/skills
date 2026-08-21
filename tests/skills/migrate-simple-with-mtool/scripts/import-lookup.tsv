@@ -1,0 +1,70 @@
+# Spring import (suffix match)	action	replacement import / note	category
+org.springframework.boot.SpringApplication	remove	No main class needed in Quarkus	Lifecycle
+org.springframework.boot.autoconfigure.SpringBootApplication	remove	No main class needed in Quarkus	Lifecycle
+org.springframework.boot.autoconfigure	remove	Quarkus auto-configures via extensions	Lifecycle
+org.springframework.boot.CommandLineRunner	replace	io.quarkus.runtime.StartupEvent (@Observes)	Lifecycle
+org.springframework.boot.ApplicationRunner	replace	io.quarkus.runtime.StartupEvent (@Observes)	Lifecycle
+org.springframework.stereotype.Component	replace	jakarta.enterprise.context.ApplicationScoped	DI
+org.springframework.stereotype.Service	replace	jakarta.enterprise.context.ApplicationScoped	DI
+org.springframework.stereotype.Repository	replace	jakarta.enterprise.context.ApplicationScoped	DI
+org.springframework.stereotype.Controller	replace	jakarta.ws.rs.Path (NOT supported by compat — only @RestController)	REST
+org.springframework.web.bind.annotation.RestController	replace	jakarta.ws.rs.Path	REST
+org.springframework.beans.factory.annotation.Autowired	replace	jakarta.inject.Inject	DI
+org.springframework.beans.factory.annotation.Qualifier	replace	jakarta.inject.Named	DI
+org.springframework.beans.factory.annotation.Value	replace	org.eclipse.microprofile.config.inject.ConfigProperty	DI
+org.springframework.context.annotation.Configuration	replace	jakarta.enterprise.context.ApplicationScoped	DI
+org.springframework.context.annotation.Bean	replace	jakarta.enterprise.inject.Produces	DI
+org.springframework.context.annotation.Primary	review	io.quarkus.arc.DefaultBean (NOT supported by compat)	DI
+org.springframework.context.annotation.Lazy	remove	Quarkus beans are lazy by default	DI
+org.springframework.context.annotation.Scope	replace	jakarta.inject.Singleton / @Dependent / @RequestScoped	DI
+org.springframework.context.annotation.Conditional	review	@IfBuildProfile or @LookupIfProperty (NOT supported by compat)	DI
+org.springframework.ui.Model	review	Not supported — Spring MVC server-side rendering	REST
+org.springframework.web.servlet	review	Not supported — Spring MVC server-side rendering	REST
+org.springframework.web.bind.annotation.RequestMapping	replace	jakarta.ws.rs.Path	REST
+org.springframework.web.bind.annotation.GetMapping	replace	jakarta.ws.rs.GET	REST
+org.springframework.web.bind.annotation.PostMapping	replace	jakarta.ws.rs.POST	REST
+org.springframework.web.bind.annotation.PutMapping	replace	jakarta.ws.rs.PUT	REST
+org.springframework.web.bind.annotation.DeleteMapping	replace	jakarta.ws.rs.DELETE	REST
+org.springframework.web.bind.annotation.PatchMapping	replace	jakarta.ws.rs.PATCH	REST
+org.springframework.web.bind.annotation.PathVariable	replace	jakarta.ws.rs.PathParam	REST
+org.springframework.web.bind.annotation.RequestParam	replace	jakarta.ws.rs.QueryParam	REST
+org.springframework.web.bind.annotation.RequestBody	remove	Implicit in Quarkus REST	REST
+org.springframework.web.bind.annotation.RequestHeader	replace	jakarta.ws.rs.HeaderParam	REST
+org.springframework.web.bind.annotation.CookieValue	replace	jakarta.ws.rs.CookieParam	REST
+org.springframework.web.bind.annotation.ResponseBody	remove	Implicit in Quarkus REST	REST
+org.springframework.web.bind.annotation.ResponseStatus	replace	Return jakarta.ws.rs.core.Response	REST
+org.springframework.web.bind.annotation.ExceptionHandler	replace	org.jboss.resteasy.reactive.server.ServerExceptionMapper	REST
+org.springframework.web.bind.annotation.RestControllerAdvice	replace	org.jboss.resteasy.reactive.server.ServerExceptionMapper	REST
+org.springframework.web.bind.annotation.CrossOrigin	review	Configure quarkus.http.cors in application.properties	REST
+org.springframework.web.bind.annotation.InitBinder	review	NOT supported by compat	REST
+org.springframework.web.bind.annotation.ModelAttribute	review	NOT supported by compat	REST
+org.springframework.http.ResponseEntity	keep	Supported by quarkus-spring-web compat	REST
+org.springframework.http.HttpStatus	keep	Supported by quarkus-spring-web compat	REST
+org.springframework.data.jpa.repository.JpaRepository	keep	Supported by quarkus-spring-data-jpa compat	JPA
+org.springframework.data.repository.CrudRepository	keep	Supported by quarkus-spring-data-jpa compat	JPA
+org.springframework.data.repository.PagingAndSortingRepository	keep	Supported by quarkus-spring-data-jpa compat	JPA
+org.springframework.data.domain.Page	keep	Supported by quarkus-spring-data-jpa compat	JPA
+org.springframework.data.domain.Pageable	keep	Supported by quarkus-spring-data-jpa compat	JPA
+org.springframework.data.domain.PageRequest	keep	Supported by quarkus-spring-data-jpa compat	JPA
+org.springframework.data.domain.Sort	keep	Supported by quarkus-spring-data-jpa compat	JPA
+org.springframework.data.jpa.repository.Query	keep	Supported by quarkus-spring-data-jpa compat (no SpEL)	JPA
+org.springframework.data.jpa.repository.Modifying	keep	Supported by quarkus-spring-data-jpa compat	JPA
+org.springframework.data.rest	keep	Supported by quarkus-spring-data-rest compat	JPA
+org.springframework.transaction.annotation.Transactional	replace	jakarta.transaction.Transactional	JPA
+org.springframework.format.annotation.DateTimeFormat	review	Spring-specific form binding — not available without Spring MVC	Java
+org.springframework.scheduling.annotation.Scheduled	replace	io.quarkus.scheduler.Scheduled	Scheduling
+org.springframework.scheduling.annotation.EnableScheduling	remove	Auto-enabled with quarkus-scheduler extension	Scheduling
+org.springframework.scheduling.annotation.Async	review	Return Uni<T> or use managed executor (NOT supported by compat)	Scheduling
+org.springframework.security.access.annotation.Secured	replace	jakarta.annotation.security.RolesAllowed	Security
+org.springframework.security.access.prepost.PreAuthorize	replace	jakarta.annotation.security.RolesAllowed (limited SpEL)	Security
+org.springframework.security.config.annotation.web.configuration.EnableWebSecurity	remove	Configure in application.properties	Security
+org.springframework.cache.annotation.Cacheable	replace	io.quarkus.cache.CacheResult	Cache
+org.springframework.cache.annotation.CacheEvict	replace	io.quarkus.cache.CacheInvalidate	Cache
+org.springframework.cache.annotation.CachePut	replace	@CacheInvalidate + @CacheResult	Cache
+org.springframework.cache.annotation.EnableCaching	remove	Auto-enabled with quarkus-cache extension	Cache
+org.springframework.boot.context.properties.ConfigurationProperties	replace	io.smallrye.config.ConfigMapping	Config
+org.springframework.boot.test.context.SpringBootTest	replace	io.quarkus.test.junit.QuarkusTest	Testing
+org.springframework.boot.test.mock.mockito.MockBean	replace	io.quarkus.test.InjectMock	Testing
+org.springframework.test.context.ActiveProfiles	replace	io.quarkus.test.junit.TestProfile	Testing
+org.springframework.boot.test.web.client.TestRestTemplate	replace	io.restassured (RestAssured)	Testing
+org.springframework.boot.test.web.server.LocalServerPort	replace	io.quarkus.test.common.http.TestHTTPResource	Testing

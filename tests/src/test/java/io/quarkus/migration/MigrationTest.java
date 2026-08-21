@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.quarkus.migration.runner.AgentRunner;
 import io.quarkus.migration.runner.RunnerRegistry;
+import static io.quarkus.migration.runner.RunnerRegistry.resolveModel;
+import static io.quarkus.migration.runner.RunnerRegistry.resolveProvider;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -60,13 +62,10 @@ class MigrationTest {
         return System.getProperty("ai.model", "claude-opus-4-6@default");
     }
 
-    /** Display string for the provider/model combination. */
-    static String aiModelDisplay() {
-        String p = aiProvider();
-        String m = aiModel();
-        if (!p.isEmpty() && !m.isEmpty()) return p + "/" + m;
-        if (!p.isEmpty()) return p + "/(default)";
-        if (!m.isEmpty()) return m;
+    /** Display string for the resolved provider/model combination. */
+    static String aiModelDisplay(String provider, String model) {
+        if (!provider.isEmpty() && !model.isEmpty()) return provider + "/" + model;
+        if (!model.isEmpty()) return model;
         return "(ai agent default)";
     }
 
@@ -108,6 +107,37 @@ class MigrationTest {
         return Boolean.parseBoolean(System.getProperty("ai.sanitize", "false"));
     }
 
+    /** Whether to run verification checks after migration. Default: true. */
+    static boolean aiChecks() {
+        return Boolean.parseBoolean(System.getProperty("runChecks", "true"));
+    }
+
+    /** Whether to run the skill review step after migration. Default: true. */
+    static boolean aiReview() {
+        return Boolean.parseBoolean(System.getProperty("ai.review", "true"));
+    }
+
+    /** Number of times to repeat the migration. Default: 1. */
+    static int runs() {
+        return Integer.parseInt(System.getProperty("runs", "1"));
+    }
+
+    /** Comma-separated list of projects to test. Overrides ai.project when set. */
+    static String aiProjects() {
+        return System.getProperty("ai.projects", "");
+    }
+
+    /** Comma-separated list of skills for benchmark (max 2). Overrides ai.skill when set. */
+    static List<String> aiSkills() {
+        String val = System.getProperty("ai.skills", "");
+        if (val.isEmpty()) return List.of();
+        String[] parts = val.split(",");
+        if (parts.length > 2) {
+            throw new IllegalArgumentException("ai.skills supports at most 2 skills for benchmark, got: " + parts.length);
+        }
+        return Arrays.stream(parts).map(String::trim).toList();
+    }
+
     // -- discover test projects --
 
     static Path repoRoot() {
@@ -142,13 +172,23 @@ class MigrationTest {
 
     static Stream<Arguments> migrationProjects() throws IOException {
         Path projects = projectsDir();
-        String filter = aiProject();
+        String multiFilter = aiProjects();
+        String singleFilter = aiProject();
+
+        Set<String> filterSet = new LinkedHashSet<>();
+        if (!multiFilter.isEmpty()) {
+            for (String p : multiFilter.split(",")) {
+                filterSet.add(p.trim());
+            }
+        } else if (!singleFilter.isEmpty()) {
+            filterSet.add(singleFilter);
+        }
 
         try (var dirs = Files.list(projects)) {
             return dirs
                     .filter(Files::isDirectory)
                     .filter(p -> Files.exists(p.resolve("project.yaml")))
-                    .filter(p -> filter.isEmpty() || p.getFileName().toString().equals(filter))
+                    .filter(p -> filterSet.isEmpty() || filterSet.contains(p.getFileName().toString()))
                     .sorted()
                     .map(p -> {
                         try {
@@ -165,103 +205,215 @@ class MigrationTest {
         }
     }
 
+    private static final Map<String, List<MigrationResult>> globalResultsBySkill = new LinkedHashMap<>();
+
     // -- the actual test --
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("migrationProjects")
     @Order(1)
     void migrate(ProjectConfig config, Path projectDir) throws Exception {
+        // Resolve provider/model defaults per agent
+        String provider = resolveProvider(aiCmd(), aiProvider());
+        String model = resolveModel(aiCmd(), aiModel());
+        String modelDisplay = aiModelDisplay(provider, model);
+
+        boolean projectDefinesChecks = config.checks() != null && !config.checks().isEmpty();
+        boolean hasChecks = aiChecks() && projectDefinesChecks;
+        int totalRuns = runs();
+
+        // Determine which skills to iterate
+        List<String> skills = aiSkills();
+        boolean isBenchmark = skills.size() > 1;
+        if (skills.isEmpty()) {
+            String singleSkill = aiSkill().isEmpty() ? config.skill() : aiSkill();
+            skills = List.of(singleSkill);
+        }
+
         System.out.println("\n" + "=".repeat(60));
         System.out.println("PROJECT: " + config.name());
-        System.out.println("  provider: " + (aiProvider().isEmpty() ? "(default)" : aiProvider()));
-        System.out.println("  model:    " + (aiModel().isEmpty() ? "(default)" : aiModel()));
-        System.out.println("  strategy: " + aiStrategy());
+        System.out.println("  agent:    " + aiCmd());
+        System.out.println("  provider: " + (provider.isEmpty() ? "(n/a)" : provider));
+        System.out.println("  model:    " + model);
         System.out.println("  timeout:  " + aiTimeout() + "s");
-        System.out.println("  checks:   " + config.checks());
+        System.out.println("  checks:   " + (hasChecks ? config.checks() : !aiChecks() ? "disabled (runChecks=false)" : "disabled (none defined)"));
+        System.out.println("  skills:   " + skills);
+        if (totalRuns > 1) {
+            System.out.println("  runs:     " + totalRuns + " (per skill)");
+        }
         System.out.println("=".repeat(60));
 
-        // 1. Prepare working directory and output directory
-        Path workDir = prepareWorkDir(config, projectDir);
-
-        // Build a run name: project_provider_model_strategy
-        String providerShort = aiProvider().isEmpty() ? "default" : aiProvider().replaceAll("[^a-zA-Z0-9-]", "-");
-        String modelShort = aiModel().isEmpty() ? "default" : aiModel().replaceAll("[^a-zA-Z0-9-]", "-");
-        String runName = config.name() + "_" + providerShort + "_" + modelShort + "_" + aiStrategy();
         Path outputDir = Path.of("target", "runs").toAbsolutePath();
-
-        System.out.println("  workdir:  " + workDir);
-        System.out.println("  outputs:  " + outputDir.resolve(runName + ".*"));
-
-        // 2. Resolve the skill
-        String skillRefStr = aiSkill().isEmpty() ? config.skill() : aiSkill();
-        Path skillPath = skillResolver.resolve(skillRefStr, aiSkillBranch());
-
-        boolean isUrl = skillRefStr.startsWith("https://") || skillRefStr.startsWith("http://") || skillRefStr.startsWith("git@");
-        SkillReference skillRef = new SkillReference(
-                config.skill(),
-                isUrl ? skillRefStr : null,
-                skillPath.toString());
-
-        MigrationResult result = new MigrationResult(aiCmd(),
-                config.name(), aiModelDisplay(), aiStrategy(), skillRef);
-        result.setWorkDir(workDir.toString());
-        result.setRunName(runName);
-        assertTrue(Files.isDirectory(skillPath),
-                "Skill directory not found: " + skillPath);
-
         int timeout = config.timeout() > 0 ? config.timeout() : aiTimeout();
+        String modelShort = model.isEmpty() ? "default" : model.replaceAll("[^a-zA-Z0-9-]", "-");
 
-        // Select the agent from the Registry
-        AgentRunner runner = RunnerRegistry.getRunner(aiCmd(), aiProvider(), aiModel(), skillPath, aiStrategy(), timeout, aiPrompt(), aiSanitize());
+        List<String> lastFailures = new ArrayList<>();
+        Path lastWorkDir = null;
+        String lastScore = "0/0";
 
-        System.out.printf("  Running migration agent: %s ...%n",aiCmd());
-        AgentRunner.RunOutput output = runner.run(workDir, outputDir, runName);
+        for (String skillRefStr : skills) {
+            Path skillPath = skillResolver.resolve(skillRefStr, aiSkillBranch());
 
-        result.setAiExitCode(output.exitCode());
-        result.setDuration(output.duration());
-        result.setSessionFiles(output.sessionFiles());
+            boolean isUrl = skillRefStr.startsWith("https://") || skillRefStr.startsWith("http://") || skillRefStr.startsWith("git@");
+            SkillReference skillRef = new SkillReference(
+                    isUrl ? extractSkillShortName(skillRefStr) : skillRefStr,
+                    isUrl ? skillRefStr : null,
+                    skillPath.toString());
 
-        System.out.println("  Migration completed in " + output.duration().toSeconds() + "s (exit=" + output.exitCode() + ")");
+            assertTrue(Files.isDirectory(skillPath),
+                    "Skill directory not found: " + skillPath);
 
-        // 3. Extract usage stats from session
-        AgentRunner.UsageStats usage = runner.extractUsage(output.sessionFiles());
-        result.setTotalTokens(usage.totalTokens());
-        result.setTotalCost(usage.totalCost());
-        result.setApiCalls(usage.apiCalls());
+            String skillShort = extractSkillShortName(skillRefStr);
+            boolean isSpringMigration = "spring-boot".equals(config.type()) && isMigrationSkill(skillRefStr);
+            if (isSpringMigration) {
+                System.out.println("  strategy: " + aiStrategy());
+            }
+            String suffix = isSpringMigration ? "_" + modelShort + "_" + aiStrategy() : "_" + modelShort;
+            String baseRunName = isBenchmark
+                    ? config.name() + "_" + skillShort + suffix
+                    : config.name() + suffix;
 
-        // 4. Run checks
-        MigrationChecks checks = new MigrationChecks(workDir);
-        System.out.println("  Running checks...");
+            if (isBenchmark) {
+                System.out.println("\n" + "=".repeat(60));
+                System.out.printf("  SKILL: %s%n", skillRefStr);
+                System.out.println("=".repeat(60));
+            }
 
-        List<String> failures = new ArrayList<>();
-        Optional.ofNullable(config.checks())
-                .ifPresent(list -> list.forEach(check -> {
-                    System.out.print("    " + check + " ... ");
-                    boolean passed = checks.runCheck(check);
-                    result.addCheck(check, passed);
-                    System.out.println(passed ? "✅" : "❌");
-                    if (!passed) {
-                        failures.add(check);
-                    }
-                }));
+            List<MigrationResult> skillResults = new ArrayList<>();
 
-        // 5. Run skill review (separate ai session)
-        AgentRunner.ReviewOutput reviewOutput = runner.review(
-                output.sessionFiles().getFirst(), workDir, outputDir, runName, skillPath, result.getChecks());
-        result.setReview(reviewOutput.review());
-        result.setReviewTokens(reviewOutput.usage().totalTokens());
-        result.setReviewCost(reviewOutput.usage().totalCost());
+            for (int run = 1; run <= totalRuns; run++) {
+                String runName = totalRuns > 1 ? baseRunName + "_run" + run : baseRunName;
 
-        // 6. Record result
-        tracker.record(result);
-        System.out.println("\n" + result);
+                if (totalRuns > 1) {
+                    System.out.println("\n" + "-".repeat(60));
+                    System.out.printf("  RUN %d/%d%n", run, totalRuns);
+                    System.out.println("-".repeat(60));
+                }
 
-        // 7. Assert all checks passed
-        if (!failures.isEmpty()) {
-            fail("Migration checks failed: " + failures + "\n" +
-                    "Work dir preserved at: " + workDir + "\n" +
-                    "Score: " + result.score());
+                // 1. Prepare a fresh working directory
+                Path workDir = prepareWorkDir(config, projectDir);
+                lastWorkDir = workDir;
+
+                System.out.println("  workdir:  " + workDir);
+                System.out.println("  outputs:  " + outputDir.resolve(runName + ".*"));
+
+                MigrationResult result = new MigrationResult(aiCmd(),
+                        config.name(), modelDisplay, aiStrategy(), skillRef);
+                result.setWorkDir(workDir.toString());
+                result.setRunName(runName);
+                result.setPrompt(aiPrompt());
+                result.setUserProvider(aiProvider());
+                result.setUserModel(aiModel());
+                result.setProjectType(config.type());
+
+                // 2. Run migration
+                AgentRunner runner = RunnerRegistry.getRunner(aiCmd(), provider, model, skillPath, aiStrategy(), timeout, aiPrompt(), aiSanitize());
+
+                System.out.printf("  Running migration agent: %s ...%n", aiCmd());
+                AgentRunner.RunOutput output = runner.run(workDir, outputDir, runName);
+
+                result.setAiExitCode(output.exitCode());
+                result.setDuration(output.duration());
+                result.setSessionFiles(output.sessionFiles());
+
+                System.out.println("  Migration completed in " + output.duration().toSeconds() + "s (exit=" + output.exitCode() + ")");
+
+                // 3. Extract usage stats from session
+                AgentRunner.UsageStats usage = runner.extractUsage(output.sessionFiles());
+                result.setTotalTokens(usage.totalTokens());
+                result.setTotalCost(usage.totalCost());
+                result.setApiCalls(usage.apiCalls());
+                result.setToolCalls(usage.toolCalls());
+                result.setInputTokens(usage.inputTokens());
+                result.setOutputTokens(usage.outputTokens());
+                result.setCacheRead(usage.cacheRead());
+                result.setCacheWrite(usage.cacheWrite());
+                result.setModelUsages(usage.modelUsages());
+
+                // 4. Run checks
+                List<String> failures = new ArrayList<>();
+                if (hasChecks) {
+                    MigrationChecks checks = new MigrationChecks(workDir);
+                    System.out.println("  Running checks...");
+
+                    config.checks().forEach(check -> {
+                        System.out.print("    " + check + " ... ");
+                        boolean passed = checks.runCheck(check);
+                        result.addCheck(check, passed);
+                        System.out.println(passed ? "PASS" : "FAIL");
+                        if (!passed) {
+                            failures.add(check);
+                        }
+                    });
+                } else {
+                    System.out.println("  Skipping checks" + (!aiChecks() ? " (runChecks=false)" : " (none defined)"));
+                }
+
+                // 5. Run skill review (separate ai session)
+                if (aiReview() && hasChecks && !output.sessionFiles().isEmpty()) {
+                    AgentRunner.ReviewOutput reviewOutput = runner.review(
+                            output.sessionFiles().getFirst(), workDir, outputDir, runName, skillPath, result.getChecks());
+                    result.setReview(reviewOutput.review());
+                    result.setReviewTokens(reviewOutput.usage().totalTokens());
+                    result.setReviewCost(reviewOutput.usage().totalCost());
+                } else {
+                    String reason = !aiReview() ? " (ai.review=false)"
+                            : output.sessionFiles().isEmpty() ? " (no session files exported)"
+                            : " (no checks defined)";
+                    System.out.println("  Skipping skill review" + reason);
+                }
+
+                // 6. Record result
+                tracker.record(result);
+                skillResults.add(result);
+                System.out.println("\n" + result);
+
+                lastFailures = failures;
+                lastScore = result.score();
+            }
+
+            // 7. Write per-skill summary when multiple runs
+            if (totalRuns > 1) {
+                tracker.writeSummaryReport(skillResults, baseRunName);
+            }
+
+            // Collect for global summary
+            globalResultsBySkill.computeIfAbsent(skillRefStr, k -> new ArrayList<>()).addAll(skillResults);
         }
+
+        // 8. Assert last run's checks passed (skip in benchmark mode to collect all results)
+        if (!lastFailures.isEmpty() && !isBenchmark) {
+            fail("Migration checks failed: " + lastFailures + "\n" +
+                    "Work dir preserved at: " + lastWorkDir + "\n" +
+                    "Score: " + lastScore);
+        }
+    }
+
+    @AfterAll
+    static void generateGlobalSummary() {
+        boolean multipleSkills = globalResultsBySkill.size() > 1;
+        boolean multipleProjects = globalResultsBySkill.values().stream()
+                .flatMap(List::stream)
+                .map(MigrationResult::getProject)
+                .distinct()
+                .count() > 1;
+
+        if (multipleSkills || multipleProjects) {
+            tracker.writeGlobalSummary(globalResultsBySkill);
+        }
+    }
+
+    private static String extractSkillShortName(String skillRef) {
+        String name = skillRef;
+        if (skillRef.contains("/")) {
+            name = skillRef.substring(skillRef.lastIndexOf('/') + 1);
+        }
+        return name.replaceAll("[^a-zA-Z0-9-]", "-");
+    }
+
+    private static boolean isMigrationSkill(String skillRef) {
+        String name = extractSkillShortName(skillRef).toLowerCase();
+        return name.contains("migrate");
     }
 
     // -- helpers --

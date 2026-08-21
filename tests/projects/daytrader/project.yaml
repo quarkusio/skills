@@ -1,0 +1,5 @@
+name: daytrader
+description: DayTrader - benchmark application for stock trading
+type: spring-boot
+source: local
+timeout: 900

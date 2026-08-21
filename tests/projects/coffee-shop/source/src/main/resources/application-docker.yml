@@ -1,0 +1,31 @@
+server:
+  port: 8080
+
+spring:
+  kafka:
+    bootstrap-servers: kafka:9092
+
+  datasource:
+    url: jdbc:postgresql://postgres:5432/coffeeshop
+    username: coffee
+    password: coffee
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+# Use a relative URL so the browser hits the same host that served the page
+streamUrl: /api/dashboard/stream
+storeId: ATLANTA

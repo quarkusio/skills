@@ -1,0 +1,5 @@
+name: realworld
+description: ReadWorld.io - https://github.com/realworld-apps/realworld backend project using spring boot java using spring-security, spring-data-jpa
+type: spring-boot
+source: local
+timeout: 900

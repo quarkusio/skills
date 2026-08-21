@@ -16,10 +16,11 @@ JUnit 5 test suite that runs migration skills against real projects, scores the 
 The test harness calls an Ai `agent` to run migrations. The AI agent needs credentials for whichever combination AI provider/model you want to test. 
 The following table references the agent currently supported and refers to their documentation to install the agent and configure a provider using a subscription, API key, OAuth, etc
 
-| Agent name                       | Description                     |                                                                                                              |
-|----------------------------------|---------------------------------|--------------------------------------------------------------------------------------------------------------|
-| [opencode](https://opencode.ai/) | OpenSource AI coding agent      | Default agent. See the list of the LLM [providers](https://opencode.ai/docs/providers/) supported            |
-| [Pi](https://pi.dev)             | Minimal terminal coding harness | See the list of the [providers](https://pi.dev/docs/latest/providers) to configure them like the credentials |
+| Agent name | `ai.cmd` | Default provider | Default model | Description |
+|---|---|---|---|---|
+| [opencode](https://opencode.ai/) | `opencode` | `google-vertex-anthropic` | `claude-opus-4-6@default` | Default agent. See the list of the LLM [providers](https://opencode.ai/docs/providers/) supported |
+| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `claude` | _(n/a)_ | `claude-opus-4-6` | Uses Anthropic API directly. Set up via `claude login` or `ANTHROPIC_API_KEY` env var |
+| [Pi](https://pi.dev) | `pi` | `vertex-anthropic` | `claude-opus-4-6` | See the list of the [providers](https://pi.dev/docs/latest/providers) to configure them like the credentials |
 
 > [!IMPORTANT] 
 > Before to execute a test, verify that the AI agent can access the provider and the model selected
@@ -27,6 +28,7 @@ The following table references the agent currently supported and refers to their
 ```bash
 # Quick test — should produce a response
 opencode run "Say hello in 5 different languages"
+claude -p "Say hello in 5 different languages"
 pi -p "Say hello in 5 different languages"
 ```
 
@@ -46,6 +48,7 @@ cd tests/
 mvn test
 
 # Select the agent to be used. Default is: opencode
+mvn test -Dai.cmd=claude
 mvn test -Dai.cmd=pi
 
 # Run a specific sample project
@@ -66,6 +69,10 @@ mvn test -Dai.provider=vertex-anthropic -Dai.model=claude-opus-4-6 // pi
 mvn test -Dai.provider=anthropic -Dai.model=claude-sonnet-4-5-20250514
 mvn test -Dai.provider=openai -Dai.model=gpt-4o
 
+# Claude Code agent (uses Anthropic API directly, provider is implicit)
+mvn test -Dai.cmd=claude -Dai.model=claude-opus-4-6
+mvn test -Dai.cmd=claude -Dai.model=claude-sonnet-4-5-20250514
+
 # Use compatibility migration strategy instead of full
 mvn test -Dai.strategy=compatibility
 
@@ -80,18 +87,23 @@ mvn test -Dai.project=spring-jpa-crud -Dai.provider=anthropic -Dai.model=claude-
 
 The complete list of the configurations via `-D` flags:
 
-| Property          | Default                                 | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-|-------------------|-----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `ai.provider`     | `google-vertex-anthropic`               | Provider name (e.g. `anthropic`, `google`, `openai`, `vertex-anthropic`)                                                                                                                                                                                                                                                                                                                                                                                         |
-| `ai.model`        | `claude-opus-4-6@default`               | Model ID (e.g. `claude-sonnet-4-5-20250514`, `gemini-2.5-pro`)                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `ai.strategy`     | `full`                                  | Migration strategy: `full` or `compatibility`. The strategy will tell to AI if we would like to migrate Spring Boot to Quarkus or using the Spring compatibility later which has been developed for some spring components like [DI](https://quarkus.io/guides/spring-di#more-spring-guides), [Web](https://quarkus.io/guides/spring-web), [Data JPA](https://quarkus.io/guides/spring-data-jpa), [Data REST](https://quarkus.io/guides/spring-data-rest),  etc. |
-| `ai.prompt`       | see template migration message [here]() | Override the default migration prompt message when it is needed to test a new and different skills                                                                                                                                                                                                                                                                                                                                                               |
-| `ai.timeout`      | `300`                                   | Timeout per project in seconds                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `ai.cmd`          | `opencode`                              | Path to the AI binary (if not on PATH)                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `ai.project`      | *(all)*                                 | Run only this project name                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `ai.skill`        | *(from project.yaml)*                   | Skill to use: a local name (e.g. `spring-boot-to-quarkus`) or a GitHub URL                                                                                                                                                                                                                                                                                                                                                                                       |
-| `ai.skill.branch` | *(parsed from URL)*                     | Explicit branch — only needed when the branch name contains `/` and the URL has a subpath                                                                                                                                                                                                                                                                                                                                                                        |
-| `ai.sanitize`     | `false`                                 | When `true`, pass `--sanitize` to strip sensitive content from exported opencode sessions                                                                                                                                                                                                                                                                                                                                                                        |
+| Property          | Default                                                                                                                                                                                             | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+|-------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ai.provider`     | `google-vertex-anthropic`                                                                                                                                                                           | Provider name (e.g. `anthropic`, `google`, `openai`, `vertex-anthropic`)                                                                                                                                                                                                                                                                                                                                                                                         |
+| `ai.model`        | `claude-opus-4-6@default`                                                                                                                                                                           | Model ID (e.g. `claude-sonnet-4-5-20250514`, `gemini-2.5-pro`)                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `ai.strategy`     | `full`                                                                                                                                                                                              | Migration strategy: `full` or `compatibility`. The strategy will tell to AI if we would like to migrate Spring Boot to Quarkus or using the Spring compatibility later which has been developed for some spring components like [DI](https://quarkus.io/guides/spring-di#more-spring-guides), [Web](https://quarkus.io/guides/spring-web), [Data JPA](https://quarkus.io/guides/spring-data-jpa), [Data REST](https://quarkus.io/guides/spring-data-rest),  etc. |
+| `ai.prompt`       | Migration prompt message declared [here](https://github.com/quarkusio/skills/blob/bec909505664bf3405c39542a402c4ee8e5c5cf1/tests/src/test/java/io/quarkus/migration/runner/OpenCodeRunner.java#L55) | Override the default migration prompt message when it is needed to test a new and different skills                                                                                                                                                                                                                                                                                                                                                               |
+| `ai.timeout`      | `300`                                                                                                                                                                                               | Timeout per project in seconds                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `ai.cmd`          | `opencode`                                                                                                                                                                                          | Path to the AI binary (if not on PATH)                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `ai.project`      | *(all)*                                                                                                                                                                                             | Run only this project name                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `ai.projects`     | *(all)*                                                                                                                                                                                             | Comma-separated list of projects to test (e.g. `dummy,spring-rest-api`). Overrides `ai.project`                                                                                                                                                                                                                                                                                                                                                                  |
+| `ai.skill`        | *(from project.yaml)*                                                                                                                                                                               | Skill to use: a local name (e.g. `spring-boot-to-quarkus`) or a GitHub URL                                                                                                                                                                                                                                                                                                                                                                                       |
+| `ai.skills`       | *(from project.yaml)*                                                                                                                                                                               | Comma-separated list of skills for benchmark comparison (max 2). Overrides `ai.skill`                                                                                                                                                                                                                                                                                                                                                                            |
+| `ai.skill.branch` | *(parsed from URL)*                                                                                                                                                                                 | Explicit branch — only needed when the branch name contains `/` and the URL has a subpath                                                                                                                                                                                                                                                                                                                                                                        |
+| `runs`            | `1`                                                                                                                                                                                                 | Number of times to repeat the migration. Each run gets a fresh workdir, its own report, and a separate entry in `history.jsonl`. Useful for collecting data across multiple runs                                                                                                                                                                                                                                                                                 |
+| `runChecks`       | `true`                                                                                                                                                                                              | When `false`, skip verification checks after migration. Also skipped when the project has no checks defined                                                                                                                                                                                                                                                                                                                                                      |
+| `ai.review`       | `true`                                                                                                                                                                                              | When `false`, skip the skill review step after migration. Also skipped when checks are disabled or none defined                                                                                                                                                                                                                                                                                                                                                  |
+| `ai.sanitize`     | `false`                                                                                                                                                                                             | When `true`, pass `--sanitize` to strip sensitive content from exported opencode sessions                                                                                                                                                                                                                                                                                                                                                                        |
 
 ### Selecting a skill
 
@@ -116,7 +128,7 @@ Remote clones are cached in `target/skills/` (or within the AI agent recommended
 
 ### Examples
 
-Here are some examples that we currently use for local tests with Google Vertex AI combining the system propserties and environment variables
+Here are some examples that we currently use for local tests with Google Vertex AI combining the system properties and environment variables
 
 1. Dummy project
 
@@ -156,6 +168,64 @@ mvn test \
     -Dai.timeout=600
 ```
 > [!NOTE] You can remove the `-Dai.***` system properties having default values !
+
+## Benchmark: comparing skills
+
+Use `-Dai.skills` to benchmark up to 2 skills against one or more projects. Each skill is run independently with its own set of runs, and a global summary report with delta comparison is generated at the end.
+
+### Single project, 2 skills
+
+```bash
+# Compare two skills on the same project with 5 runs each
+mvn test \
+  -Dai.project=spring-rest-api \
+  -Dai.skills=migrate-spring-to-quarkus,migrate-spring-to-quarkus-mtool \
+  -Dai.cmd=claude \
+  -Druns=5
+```
+
+### Multiple projects, 2 skills
+
+```bash
+# Benchmark across multiple projects
+mvn test \
+  -Dai.projects=spring-rest-api,spring-jpa-crud \
+  -Dai.skills=migrate-spring-to-quarkus,migrate-spring-to-quarkus-mtool \
+  -Dai.cmd=claude \
+  -Druns=3
+```
+
+### Multiple projects, single skill
+
+```bash
+# Test a single skill across several projects
+mvn test \
+  -Dai.projects=spring-rest-api,spring-jpa-crud,spring-boot-todo-app \
+  -Dai.skill=migrate-spring-to-quarkus \
+  -Druns=3
+```
+
+### Generated reports
+
+When benchmarking with 2 skills, the harness generates:
+
+- **Per-skill summary** (`target/runs/<project>_<skill>_*.summary.md`) — averages across runs for each skill+project combination
+- **Global summary** (`target/runs/global.summary.md`) — side-by-side comparison with a delta row showing the percentage difference between the two skills
+
+Example global summary output:
+
+```
+| Skill | mtool? | Runs | Avg Duration | Avg Input | Avg Output | Avg Cache Read | Avg Total Tokens | Avg Cost |
+|---|---|---|---|---|---|---|---|---|
+| migrate-spring-to-quarkus | No | 15 | 1m 5s (+/- 15s) | 78 (+/- 11) | 3,669 (+/- 984) | ... | 165,582 (+/- 50,343) | $0.00 |
+| migrate-spring-to-quarkus-mtool | Yes | 15 | 0m 40s (+/- 8s) | 6 (+/- 0) | 1,484 (+/- 240) | ... | 116,672 (+/- 14,660) | $0.00 |
+| **Delta** | — | — | -38.5% | -92.3% | -59.5% | ... | -29.5% | — |
+```
+
+A negative delta means the second skill used fewer resources or ran faster.
+
+> [!NOTE]
+> Run artifacts in `target/runs/` are **not deleted** between projects or skills within the same `mvn test` invocation. Each run produces its own distinct report file.
 
 ## What Happens During a Test Run
 
@@ -244,6 +314,10 @@ pi --session target/runs/spring-rest-api_claude-sonnet-4-5-20250514_full.session
 
 ## Checks
 
+After the AI agent completes the migration, the harness runs a series of verification checks to score the result. Each project declares which checks apply in its `project.yaml` file (see [Adding a Test Project](#adding-a-test-project)).
+
+### Available checks
+
 | Check | What it verifies |
 |-------|-----------------|
 | `builds` | `./mvnw compile` succeeds |
@@ -252,6 +326,31 @@ pi --session target/runs/spring-rest-api_claude-sonnet-4-5-20250514_full.session
 | `has-quarkus` | `io.quarkus` present in `pom.xml` |
 | `starts-up` | App starts and responds to HTTP (port 18080) |
 | `no-thymeleaf` | No Thymeleaf references remain in code or pom |
+
+### Enabling / disabling checks
+
+Checks are **enabled by default**. Use the `-DrunChecks` flag to control them:
+
+```bash
+# Run with checks (default)
+mvn test -Dai.project=spring-rest-api
+
+# Skip checks — useful for quick smoke tests or when iterating on skills
+mvn test -Dai.project=spring-rest-api -DrunChecks=false
+
+# Checks are also auto-disabled when the project has none defined (e.g. dummy)
+mvn test -Dai.project=dummy -Dai.prompt="Say Hello." -Dai.cmd=claude
+```
+
+When checks are disabled, the console output shows the reason:
+
+```
+  checks:   disabled (runChecks=false)    ← user disabled via -DrunChecks=false
+  checks:   disabled (none defined)       ← project has no checks in project.yaml
+```
+
+> [!NOTE]
+> Disabling checks also skips the **skill review** step, since the review uses check results to evaluate the migration.
 
 ## Results Tracking
 
@@ -265,7 +364,7 @@ Results are appended to `target/runs/history.jsonl` — one JSON line per run:
   "strategy": "full",
   "skill": "spring-boot-to-quarkus",
   "duration_seconds": 196,
-  "usage": {"total_tokens": 321222, "total_cost": 0.3216, "api_calls": 22},
+  "usage": {"total_tokens": 321222, "total_cost": 0.3216, "api_calls": 22, "tool_calls": 78},
   "checks": {"builds": true, "tests-pass": true, "no-spring-deps": true, "has-quarkus": true, "starts-up": true},
   "score": "5/5",
   "review": {"tokens": 376929, "cost": 0.466, "summary": "The skill performed well..."}

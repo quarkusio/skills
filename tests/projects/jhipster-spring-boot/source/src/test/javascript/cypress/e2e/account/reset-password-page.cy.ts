@@ -1,0 +1,41 @@
+import {
+  classInvalid,
+  classValid,
+  emailResetPasswordSelector,
+  forgetYourPasswordSelector,
+  submitInitResetPasswordSelector,
+  usernameLoginSelector,
+} from '../../support/commands';
+
+describe('forgot your password', () => {
+  let username: string;
+
+  before(() => {
+    cy.credentials().then(credentials => {
+      ({ username } = credentials);
+    });
+  });
+
+  beforeEach(() => {
+    cy.visit('');
+    cy.clickOnLoginItem();
+    cy.get(usernameLoginSelector).should('be.visible').type(username);
+    cy.get(forgetYourPasswordSelector).click();
+  });
+
+  beforeEach(() => {
+    cy.intercept('POST', '/api/account/reset-password/init').as('initResetPassword');
+  });
+
+  it('requires email', () => {
+    cy.get(emailResetPasswordSelector).should('have.class', classInvalid);
+    cy.get(emailResetPasswordSelector).type('user@gmail.com');
+    cy.get(emailResetPasswordSelector).should('have.class', classValid);
+  });
+
+  it('should be able to init reset password', () => {
+    cy.get(emailResetPasswordSelector).type('user@gmail.com');
+    cy.get(submitInitResetPasswordSelector).click();
+    cy.wait('@initResetPassword').then(({ response }) => expect(response?.statusCode).to.equal(200));
+  });
+});

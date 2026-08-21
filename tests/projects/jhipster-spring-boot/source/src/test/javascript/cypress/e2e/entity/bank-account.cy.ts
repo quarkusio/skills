@@ -1,0 +1,188 @@
+import {
+  entityConfirmDeleteButtonSelector,
+  entityCreateButtonSelector,
+  entityCreateCancelButtonSelector,
+  entityCreateSaveButtonSelector,
+  entityDeleteButtonSelector,
+  entityDetailsBackButtonSelector,
+  entityDetailsButtonSelector,
+  entityEditButtonSelector,
+  entityTableSelector,
+} from '../../support/entity';
+
+describe('BankAccount e2e test', () => {
+  const bankAccountPageUrl = '/bank-account';
+  let username: string;
+  let password: string;
+  const bankAccountSample = { name: 'pfft truly psst', balance: 23331.08 };
+
+  let bankAccount;
+
+  before(() => {
+    cy.credentials().then(credentials => {
+      ({ username, password } = credentials);
+    });
+  });
+
+  beforeEach(() => {
+    cy.login(username, password);
+  });
+
+  beforeEach(() => {
+    cy.intercept('GET', '/api/bank-accounts+(?*|)').as('entitiesRequest');
+    cy.intercept('POST', '/api/bank-accounts').as('postEntityRequest');
+    cy.intercept('DELETE', '/api/bank-accounts/*').as('deleteEntityRequest');
+  });
+
+  afterEach(() => {
+    if (bankAccount) {
+      cy.authenticatedRequest({
+        method: 'DELETE',
+        url: `/api/bank-accounts/${bankAccount.id}`,
+      }).then(() => {
+        bankAccount = undefined;
+      });
+    }
+  });
+
+  it('BankAccounts menu should load BankAccounts page', () => {
+    cy.visit('/');
+    cy.clickOnEntityMenuItem('bank-account');
+    cy.wait('@entitiesRequest').then(({ response }) => {
+      if (response?.body.length === 0) {
+        cy.get(entityTableSelector).should('not.exist');
+      } else {
+        cy.get(entityTableSelector).should('exist');
+      }
+    });
+    cy.getEntityHeading('BankAccount').should('exist');
+    cy.location('pathname').should('eq', bankAccountPageUrl);
+  });
+
+  describe('BankAccount page', () => {
+    it('should have translated page title', () => {
+      cy.visit(bankAccountPageUrl);
+      cy.getEntityHeading('BankAccount').should('not.contain', 'jhipsterSampleApplicationApp.bankAccount.home.title');
+    });
+
+    describe('create button click', () => {
+      beforeEach(() => {
+        cy.visit(bankAccountPageUrl);
+        cy.wait('@entitiesRequest');
+      });
+
+      it('should load create BankAccount page', () => {
+        cy.get(entityCreateButtonSelector).click();
+        cy.location('pathname').should('eq', `${bankAccountPageUrl}/new`);
+        cy.getEntityCreateUpdateHeading('BankAccount');
+        cy.get(entityCreateSaveButtonSelector).should('exist');
+        cy.get(entityCreateCancelButtonSelector).click();
+        cy.wait('@entitiesRequest').then(({ response }) => {
+          expect(response?.statusCode).to.equal(200);
+        });
+        cy.location('pathname').should('eq', bankAccountPageUrl);
+      });
+    });
+
+    describe('with existing value', () => {
+      beforeEach(() => {
+        cy.authenticatedRequest({
+          method: 'POST',
+          url: '/api/bank-accounts',
+          body: bankAccountSample,
+        }).then(({ body }) => {
+          bankAccount = body;
+
+          cy.intercept(
+            {
+              method: 'GET',
+              url: '/api/bank-accounts+(?*|)',
+              times: 1,
+            },
+            {
+              statusCode: 200,
+              body: [bankAccount],
+            },
+          ).as('entitiesRequestInternal');
+        });
+
+        cy.visit(bankAccountPageUrl);
+
+        cy.wait('@entitiesRequestInternal');
+      });
+
+      it('detail button click should load details BankAccount page', () => {
+        cy.get(entityDetailsButtonSelector).first().click();
+        cy.getEntityDetailsHeading('bankAccount');
+        cy.get(entityDetailsBackButtonSelector).click();
+        cy.wait('@entitiesRequest').then(({ response }) => {
+          expect(response?.statusCode).to.equal(200);
+        });
+        cy.location('pathname').should('eq', bankAccountPageUrl);
+      });
+
+      it('edit button click should load edit BankAccount page and go back', () => {
+        cy.get(entityEditButtonSelector).first().click();
+        cy.getEntityCreateUpdateHeading('BankAccount');
+        cy.get(entityCreateSaveButtonSelector).should('exist');
+        cy.get(entityCreateCancelButtonSelector).click();
+        cy.wait('@entitiesRequest').then(({ response }) => {
+          expect(response?.statusCode).to.equal(200);
+        });
+        cy.location('pathname').should('eq', bankAccountPageUrl);
+      });
+
+      it('edit button click should load edit BankAccount page and save', () => {
+        cy.get(entityEditButtonSelector).first().click();
+        cy.getEntityCreateUpdateHeading('BankAccount');
+        cy.get(entityCreateSaveButtonSelector).click();
+        cy.wait('@entitiesRequest').then(({ response }) => {
+          expect(response?.statusCode).to.equal(200);
+        });
+        cy.location('pathname').should('eq', bankAccountPageUrl);
+      });
+
+      it('last delete button click should delete instance of BankAccount', () => {
+        cy.get(entityDeleteButtonSelector).last().click();
+        cy.getEntityDeleteDialogHeading('bankAccount').should('exist');
+        cy.get(entityConfirmDeleteButtonSelector).click();
+        cy.wait('@deleteEntityRequest').then(({ response }) => {
+          expect(response?.statusCode).to.equal(204);
+        });
+        cy.wait('@entitiesRequest').then(({ response }) => {
+          expect(response?.statusCode).to.equal(200);
+        });
+        cy.location('pathname').should('eq', bankAccountPageUrl);
+
+        bankAccount = undefined;
+      });
+    });
+  });
+
+  describe('new BankAccount page', () => {
+    beforeEach(() => {
+      cy.visit(bankAccountPageUrl);
+      cy.get(entityCreateButtonSelector).click();
+      cy.getEntityCreateUpdateHeading('BankAccount');
+    });
+
+    it('should create an instance of BankAccount', () => {
+      cy.get(`[data-cy="name"]`).type('um repeatedly');
+      cy.get(`[data-cy="name"]`).should('have.value', 'um repeatedly');
+
+      cy.get(`[data-cy="balance"]`).type('23462.91');
+      cy.get(`[data-cy="balance"]`).should('have.value', '23462.91');
+
+      cy.get(entityCreateSaveButtonSelector).click();
+
+      cy.wait('@postEntityRequest').then(({ response }) => {
+        expect(response?.statusCode).to.equal(201);
+        bankAccount = response.body;
+      });
+      cy.wait('@entitiesRequest').then(({ response }) => {
+        expect(response?.statusCode).to.equal(200);
+      });
+      cy.location('pathname').should('eq', bankAccountPageUrl);
+    });
+  });
+});

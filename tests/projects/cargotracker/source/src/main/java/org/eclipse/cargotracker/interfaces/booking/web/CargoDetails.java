@@ -1,0 +1,50 @@
+package org.eclipse.cargotracker.interfaces.booking.web;
+
+import org.eclipse.cargotracker.interfaces.booking.facade.BookingServiceFacade;
+import org.eclipse.cargotracker.interfaces.booking.facade.dto.CargoRoute;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.web.context.annotation.RequestScope;
+
+/**
+ * Handles viewing cargo details. Operates against a dedicated service facade,
+ * and could easily be
+ * rewritten as a thick Swing client. Completely separated from the domain
+ * layer, unlike the
+ * tracking user interface.
+ *
+ * <p>
+ * In order to successfully keep the domain model shielded from user interface
+ * considerations, this
+ * approach is generally preferred to the one taken in the tracking controller.
+ * However, there is
+ * never any one perfect solution for all situations, so we've chosen to
+ * demonstrate two polarized
+ * ways to build user interfaces.
+ */
+@Component
+@RequestScope
+public class CargoDetails {
+
+  @Autowired
+  private BookingServiceFacade bookingServiceFacade;
+
+  private String trackingId;
+  private CargoRoute cargo;
+
+  public String getTrackingId() {
+    return trackingId;
+  }
+
+  public void setTrackingId(String trackingId) {
+    this.trackingId = trackingId;
+  }
+
+  public CargoRoute getCargo() {
+    return cargo;
+  }
+
+  public void load() {
+    cargo = bookingServiceFacade.loadCargoForRouting(trackingId);
+  }
+}

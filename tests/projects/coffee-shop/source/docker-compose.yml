@@ -1,0 +1,87 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: coffeeshop-postgres
+    environment:
+      POSTGRES_USER: coffee
+      POSTGRES_PASSWORD: coffee
+      POSTGRES_DB: coffeeshop
+    ports:
+      - "5432:5432"
+    networks:
+      - coffeeshop-net
+
+  kafka:
+    image: bitnami/kafka:3.7
+    container_name: coffeeshop-kafka
+    environment:
+      KAFKA_CFG_NODE_ID: 1
+      KAFKA_CFG_PROCESS_ROLES: "broker,controller"
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_CFG_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
+      KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_CFG_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_CFG_LOG_DIRS: "/bitnami/kafka/data"
+    ports:
+      - "9092:9092"
+    networks:
+      - coffeeshop-net
+
+  counter-service:
+    build: ./counter-service
+    container_name: counter-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      - postgres
+      - kafka
+    ports:
+      - "8081:8081"
+    networks:
+      - coffeeshop-net
+
+  barista-service:
+    build: ./barista-service
+    container_name: barista-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      - kafka
+    networks:
+      - coffeeshop-net
+
+  kitchen-service:
+    build: ./kitchen-service
+    container_name: kitchen-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      - kafka
+    networks:
+      - coffeeshop-net
+
+  web-service:
+    build: ./web-service
+    container_name: web-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      - counter-service
+      - kafka
+    ports:
+      - "8080:8080"
+    networks:
+      - coffeeshop-net
+
+networks:
+  coffeeshop-net:
+    driver: bridge

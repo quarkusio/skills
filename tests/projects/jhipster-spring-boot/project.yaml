@@ -1,0 +1,5 @@
+name: jhipster-spring-boot
+description: jhipster Spring Boot Sample Application
+type: spring-boot
+source: local
+timeout: 900

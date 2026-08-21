@@ -24,6 +24,8 @@ import static io.quarkus.migration.runner.OpenCodeSessionExporter.exportSessions
 
 public class OpenCodeRunner extends AbstractRunner implements AgentRunner {
 
+    private int streamToolCount;
+
     public OpenCodeRunner(String aiCmd, String provider, String model, Path skillPath, String strategy, int timeoutSeconds,
             String prompt, boolean sanitize) {
         super(aiCmd, provider, model, skillPath, strategy, timeoutSeconds, prompt, sanitize);
@@ -38,6 +40,8 @@ public class OpenCodeRunner extends AbstractRunner implements AgentRunner {
      */
     @Override
     public RunOutput run(Path projectDir, Path outputDir, String runName) throws IOException, InterruptedException {
+
+        streamToolCount = 0;
 
         // Create the output directories where files will be exported
         Files.createDirectories(outputDir);
@@ -178,6 +182,7 @@ public class OpenCodeRunner extends AbstractRunner implements AgentRunner {
             }
 
             case "tool_use" -> {
+                streamToolCount++;
                 JsonNode part = event.path("part");
                 String toolName = part.path("tool").asText("");
                 JsonNode state = part.path("state");
@@ -249,7 +254,7 @@ public class OpenCodeRunner extends AbstractRunner implements AgentRunner {
             }
         }
 
-        return new AgentRunner.UsageStats(totalTokens, totalCost, apiCalls, actualModel);
+        return new AgentRunner.UsageStats(totalTokens, totalCost, apiCalls, streamToolCount, actualModel);
     }
 
     @Override

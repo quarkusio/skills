@@ -1,0 +1,5 @@
+name: cargotracker
+description: Eclipse Cargo Tracker - Jakarta EE / Spring Boot DDD application
+type: spring-boot
+source: local
+timeout: 900

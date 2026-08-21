@@ -27,6 +27,11 @@
         <ai.cmd>opencode</ai.cmd>
         <ai.skill></ai.skill>
         <ai.skill.branch></ai.skill.branch>
+        <ai.projects></ai.projects>
+        <ai.skills></ai.skills>
+        <runs>1</runs>
+        <runChecks>true</runChecks>
+        <ai.review>true</ai.review>
     </properties>
 
     <dependencies>
@@ -68,6 +73,11 @@
                         <ai.cmd>${ai.cmd}</ai.cmd>
                         <ai.skill>${ai.skill}</ai.skill>
                         <ai.skill.branch>${ai.skill.branch}</ai.skill.branch>
+                        <ai.projects>${ai.projects}</ai.projects>
+                        <ai.skills>${ai.skills}</ai.skills>
+                        <runs>${runs}</runs>
+                        <runChecks>${runChecks}</runChecks>
+                        <ai.review>${ai.review}</ai.review>
                     </systemPropertyVariables>
                     <!-- Long-running tests -->
                     <forkedProcessTimeoutInSeconds>3600</forkedProcessTimeoutInSeconds>

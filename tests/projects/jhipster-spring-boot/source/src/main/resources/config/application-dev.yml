@@ -1,0 +1,110 @@
+# ===================================================================
+# Spring Boot configuration for the "dev" profile.
+#
+# This configuration overrides the application.yml file.
+#
+# More information on profiles: https://www.jhipster.tech/profiles/
+# More information on configuration properties: https://www.jhipster.tech/common-application-properties/
+# ===================================================================
+
+# ===================================================================
+# Standard Spring Boot properties.
+# Full reference is available at:
+# https://docs.spring.io/spring-boot/appendix/application-properties/index.html
+# ===================================================================
+
+logging:
+  level:
+    ROOT: DEBUG
+    tech.jhipster: DEBUG
+    org.hibernate.SQL: DEBUG
+    io.github.jhipster.sample: DEBUG
+
+spring:
+  devtools:
+    restart:
+      enabled: true
+      additional-exclude: static/**,.h2.server.properties
+    livereload:
+      enabled: false # we use Webpack dev server + BrowserSync for livereload
+  docker:
+    compose:
+      enabled: false
+      profiles:
+        active: dev
+  jackson2:
+    serialization:
+      indent-output: true
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    url: jdbc:h2:mem:jhipsterSampleApplication;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    hikari:
+      poolName: Hikari
+      auto-commit: false
+  h2:
+    console:
+      # JHipster uses a custom h2-console initializer
+      enabled: true
+  liquibase:
+    # Remove 'faker' if you do not want the sample data to be loaded automatically
+    contexts: dev, faker
+  mail:
+    host: localhost
+    port: 25
+  messages:
+    cache-duration: PT1S # 1 second, see the ISO 8601 standard
+  thymeleaf:
+    cache: false
+
+server:
+  port: 8080
+  # make sure requests the proxy uri instead of the server one
+  forward-headers-strategy: native
+
+# ===================================================================
+# JHipster specific properties
+#
+# Full reference is available at: https://www.jhipster.tech/common-application-properties/
+# ===================================================================
+
+jhipster:
+  cache: # Cache configuration
+    ehcache: # Ehcache configuration
+      time-to-live-seconds: 3600 # By default objects stay 1 hour in the cache
+      max-entries: 100 # Number of objects in each cache entry
+  # CORS is only enabled by default with the "dev" profile
+  cors:
+    # Allow Ionic for JHipster by default (* no longer allowed in Spring Boot 2.4+)
+    allowed-origins: 'http://localhost:8100,https://localhost:8100,http://localhost:9000,https://localhost:9000,http://localhost:9060,https://localhost:9060'
+    # Enable CORS when running in GitHub Codespaces
+    allowed-origin-patterns: 'https://*.githubpreview.dev'
+    allowed-methods: '*'
+    allowed-headers: '*'
+    exposed-headers: 'Authorization,Link,X-Total-Count,X-${jhipster.clientApp.name}-alert,X-${jhipster.clientApp.name}-error,X-${jhipster.clientApp.name}-params'
+    allow-credentials: true
+    max-age: 1800
+  security:
+    authentication:
+      jwt:
+        # Token is valid 24 hours
+        token-validity-in-seconds: 86400
+        token-validity-in-seconds-for-remember-me: 2592000
+  mail: # specific JHipster mail property, for standard properties see MailProperties
+    base-url: http://127.0.0.1:8080
+  logging:
+    use-json-format: false # By default, logs are not in Json format
+    logstash: # Forward logs to logstash over a socket, used by LoggingConfiguration
+      enabled: false
+      host: localhost
+      port: 5000
+      ring-buffer-size: 512
+# ===================================================================
+# Application specific properties
+# Add your own application properties here, see the ApplicationProperties class
+# to have type-safe configuration, like in the JHipsterProperties above
+#
+# More documentation is available at:
+# https://www.jhipster.tech/common-application-properties/
+# ===================================================================
+
+# application:

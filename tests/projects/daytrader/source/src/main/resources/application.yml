@@ -1,0 +1,77 @@
+server:
+  # Liberty had httpPort=9080 and httpsPort=9443.
+  # We'll run HTTPS on 9443 and add an extra HTTP connector on 9080 via a bean (this is create as a configuration in the file `src/main/java/com/ibm/daytrader/config/DualPortConfig.java`)
+  port: 9443
+  servlet:
+    context-path: /daytrader
+    session:
+      timeout: 30m
+  error:
+    whitelabel:
+      enabled: false
+    path: /error
+
+  # This is for the keystore setting
+  # <keyStore id="defaultKeyStore" password="yourPassword" />
+  # TODO: You'll need to create the keystore file at src/main/resources/keystore.p12
+  # Use `keytool` to create the keystore:
+  # keytool -genkey -alias defaultKeyStore -keyalg RSA -keystore src/main/resources/keystore.p12 -storetype PKCS12 -storepass yourPassword
+  ssl:
+    enabled: true
+    key-store: classpath:keystore.p12
+    key-store-type: PKCS12
+    key-store-password: yourPassword # match your Liberty <keyStore ... password="..."/>
+
+spring:
+  application:
+    name: daytrader
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-h2.sql
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+  datasource:
+    url: jdbc:h2:file:./data/tradedb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    hikari:
+      maximum-pool-size: 100 # Liberty maxPoolSize="100"
+      minimum-idle: 100 # Liberty minPoolSize="100"
+      # Liberty isolationLevel="TRANSACTION_READ_COMMITTED"
+      transaction-isolation: TRANSACTION_READ_COMMITTED
+
+  # Replace wasJmsServer/Client with embedded Artemis for dev
+  artemis:
+    mode: embedded
+    embedded:
+      enabled: true
+
+  mvc:
+    view:
+      prefix: /
+      suffix: .jsp
+
+logging:
+  level:
+    com.ibm.daytrader: DEBUG # Not sure what "daytrader=fine" means from a logging perspective, so I am setting this default.
+
+# --- DayTrader config (defaults).
+# ENV overrides automatically in Spring Boot. To preserve your legacy env names (RUNTIME_MODE, etc.),
+# we add ${ENV:...} fallbacks, so either the relaxed-name env OR your legacy env works.
+# Map Liberty server.env
+daytrader:
+  runtime-mode: ${DAYTRADER_RUNTIME_MODE:${RUNTIME_MODE:1}}
+  order-processing-mode: ${DAYTRADER_ORDER_PROCESSING_MODE:${ORDER_PROCESSING_MODE:0}}
+  max-users: ${DAYTRADER_MAX_USERS:${MAX_USERS:500}}
+  max-quotes: ${DAYTRADER_MAX_QUOTES:${MAX_QUOTES:400}}
+  publish-quotes: ${DAYTRADER_PUBLISH_QUOTES:${PUBLISH_QUOTES:false}}
+  display-order-alerts: ${DAYTRADER_DISPLAY_ORDER_ALERTS:${DISPLAY_ORDER_ALERTS:false}}
+  web-interface: ${DAYTRADER_WEB_INTERFACE:${WEB_INTERFACE:0}}
+  list-quote-price-change-frequency: ${DAYTRADER_LIST_QUOTE_PRICE_CHANGE_FREQUENCY:${LIST_QUOTE_PRICE_CHANGE_FREQUENCY:5}}
+  prim-iterations: ${DAYTRADER_PRIM_ITERATIONS:${primIterations:200}}
+  market-summary-interval: ${DAYTRADER_MARKET_SUMMARY_INTERVAL:${marketSummaryInterval:20}}
+  long-run: ${DAYTRADER_LONG_RUN:${longRun:false}}

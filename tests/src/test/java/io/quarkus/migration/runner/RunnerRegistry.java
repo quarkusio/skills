@@ -5,8 +5,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum RunnerRegistry {
-    PI("pi", PiRunner::new),
-    OPENCODE("opencode", OpenCodeRunner::new);
+    PI("pi", PiRunner::new, "vertex-anthropic", "claude-opus-4-6"),
+    OPENCODE("opencode", OpenCodeRunner::new, "google-vertex-anthropic", "claude-opus-4-6@default"),
+    CLAUDE("claude", ClaudeRunner::new, "", "claude-opus-4-6");
 
     @FunctionalInterface
     interface RunnerFactory {
@@ -16,6 +17,8 @@ public enum RunnerRegistry {
 
     private final String key;
     private final RunnerFactory factory;
+    private final String defaultProvider;
+    private final String defaultModel;
 
     // Fast lookup cache map
     private static final Map<String, RunnerRegistry> LOOKUP_MAP = new HashMap<>();
@@ -26,21 +29,41 @@ public enum RunnerRegistry {
         }
     }
 
-    RunnerRegistry(String key, RunnerFactory factory) {
+    RunnerRegistry(String key, RunnerFactory factory, String defaultProvider, String defaultModel) {
         this.key = key;
         this.factory = factory;
+        this.defaultProvider = defaultProvider;
+        this.defaultModel = defaultModel;
+    }
+
+    public static String resolveProvider(String aiCmd, String userProvider) {
+        if (userProvider != null && !userProvider.isBlank()) return userProvider;
+        RunnerRegistry r = lookup(aiCmd);
+        return r != null ? r.defaultProvider : "";
+    }
+
+    public static String resolveModel(String aiCmd, String userModel) {
+        if (userModel != null && !userModel.isBlank()) return userModel;
+        RunnerRegistry r = lookup(aiCmd);
+        return r != null ? r.defaultModel : "";
     }
 
     // Factory method
     public static AgentRunner getRunner(String aiCmd, String provider, String model,
                                         Path skillPath, String strategy, int timeoutSeconds, String prompt, boolean sanitize) {
-        if (aiCmd == null) {
-            throw new IllegalArgumentException("aiCmd cannot be null");
-        }
-        RunnerRegistry registry = LOOKUP_MAP.get(aiCmd.toLowerCase().trim());
+        RunnerRegistry registry = lookup(aiCmd);
         if (registry == null) {
             throw new IllegalArgumentException("No runner registered for the agent: " + aiCmd);
         }
-        return registry.factory.create(aiCmd, provider, model, skillPath, strategy, timeoutSeconds, prompt, sanitize);
+        String resolvedProvider = (provider != null && !provider.isBlank()) ? provider : registry.defaultProvider;
+        String resolvedModel = (model != null && !model.isBlank()) ? model : registry.defaultModel;
+        return registry.factory.create(aiCmd, resolvedProvider, resolvedModel, skillPath, strategy, timeoutSeconds, prompt, sanitize);
+    }
+
+    private static RunnerRegistry lookup(String aiCmd) {
+        if (aiCmd == null) {
+            throw new IllegalArgumentException("aiCmd cannot be null");
+        }
+        return LOOKUP_MAP.get(aiCmd.toLowerCase().trim());
     }
 }

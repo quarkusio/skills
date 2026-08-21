@@ -1,0 +1,16 @@
+printWidth: 140
+singleQuote: true
+tabWidth: 2
+useTabs: false
+arrowParens: avoid
+bracketSameLine: false
+plugins:
+  - prettier-plugin-packagejson
+  - prettier-plugin-java
+overrides:
+  - files: "*.java"
+    options:
+      tabWidth: 4
+  - files: src/main/webapp/**/*.html
+    options:
+      parser: angular

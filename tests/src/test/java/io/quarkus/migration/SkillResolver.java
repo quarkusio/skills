@@ -60,7 +60,18 @@ public class SkillResolver {
             return p;
         }
 
-        return skillsBaseDir.resolve(skillRef);
+        Path resolved = skillsBaseDir.resolve(skillRef);
+        if (Files.isDirectory(resolved)) {
+            return resolved;
+        }
+
+        // Fall back to CWD-relative resolution
+        Path cwdResolved = Path.of("").toAbsolutePath().resolve(skillRef);
+        if (Files.isDirectory(cwdResolved)) {
+            return cwdResolved;
+        }
+
+        return resolved;
     }
 
     private Path resolveFromUrl(String url, String explicitBranch) throws IOException, InterruptedException {

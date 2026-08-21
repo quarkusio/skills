@@ -16,6 +16,8 @@ import java.util.concurrent.*;
  */
 public class PiRunner extends AbstractRunner implements AgentRunner {
 
+    private int streamToolCount;
+
     public PiRunner(String aiCmd, String provider, String model, Path skillPath, String strategy, int timeoutSeconds, String prompt, boolean sanitize) {
         super(aiCmd, provider, model, skillPath, strategy, timeoutSeconds, prompt, sanitize);
     }
@@ -63,7 +65,7 @@ public class PiRunner extends AbstractRunner implements AgentRunner {
             }
         }
 
-        return new AgentRunner.UsageStats(totalTokens, totalCost, apiCalls, actualModel);
+        return new AgentRunner.UsageStats(totalTokens, totalCost, apiCalls, streamToolCount, actualModel);
     }
 
     @Override
@@ -107,6 +109,7 @@ public class PiRunner extends AbstractRunner implements AgentRunner {
             }
 
             case "tool_execution_start" -> {
+                streamToolCount++;
                 String toolName = event.path("toolName").asText("");
                 JsonNode args = event.path("args");
 
@@ -165,6 +168,7 @@ public class PiRunner extends AbstractRunner implements AgentRunner {
      * @param runName    prefix for output files (e.g. "spring-rest-api_anthropic_full")
      */
     public RunOutput run(Path projectDir, Path outputDir, String runName) throws IOException, InterruptedException {
+        streamToolCount = 0;
         Files.createDirectories(outputDir);
         Path sessionDir = Files.createTempDirectory("pi-session-");
 
