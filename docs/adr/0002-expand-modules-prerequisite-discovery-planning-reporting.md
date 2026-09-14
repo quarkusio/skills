@@ -126,8 +126,7 @@ unresolved issues into a consolidated, human-readable report.
 The reporting instructions currently inlined at the end of `SKILL.md` are moved into
 this module. This separation means the report content can grow independently — new
 fields, new modules, or new validation checks — without requiring changes to `SKILL.md`
-itself. As each module completes, it documents its results in `migration-summary.md`;
-the reporting module reads this running document and produces the final summary.
+itself. 
 
 Responsibilities:
 - Produce `migration-summary.md` in the target directory.
