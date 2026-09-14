@@ -87,17 +87,14 @@ Responsibilities:
 
 Tool usage: external tools (e.g., OpenRewrite scanners, TreeSitter, CLDK parsers) may be referenced
 for deterministic extraction. When used, they must be pinned to a specific version.
-Tools can be enabled or disabled via configruation files `.quarkus-migration.yml`:
-
-```yaml
-discovery:
-  tools:
-    openrewrite_scan: true
-    cldk_extractor: false
-```
+Tools can be enabled or disabled via `migration-spec.yaml`:
 
 If a tool is disabled or unavailable the module falls back to direct code scanning.
 The scope of external tool integration will be discussed in a separate issue.
+
+> **Gap:** how pinned tool versions are declared, the full schema of `migration-spec.yaml`,
+> and where the file resides (preferably in the target directory root) are not yet defined.
+> These details will be specified in [issue #79](https://github.com/quarkusio/skills/issues/79).
 
 Gate: **ALWAYS** — runs after `prerequisite`, before `planning`.
 
@@ -112,10 +109,11 @@ Responsibilities:
   Quarkus version, Java version, migration strategy, persistence/messaging patterns),
   wait for explicit user approval before proceeding.
 - In **autonomous mode**: evaluate project characteristics against selection policies,
-  apply defaults or `.quarkus-migration.yml` overrides, record explicit rationales
-  without blocking.
-- Write `migration-spec.yaml` to the target directory root as the binding contract for
-  all downstream modules.
+  apply defaults or `migration-spec.yaml` overrides without pausing for user input.
+  All decisions and the rationale behind them are still recorded in `migration-spec.yaml`
+  for auditability — the difference from interactive mode is that no confirmation is requested, not that decisions go unrecorded.
+- Populate `migration-spec.yaml` with strategy decisions and technology mappings
+  (see [migration-spec.yaml](#migration-specyaml) below).
 
 Gate: **ALWAYS** — runs after `discovery`, before the transformation modules (Build,
 Code, Frontend, Testing, Cleanup).
@@ -125,27 +123,81 @@ Code, Frontend, Testing, Cleanup).
 Aggregates execution metrics, per-module change summaries, migration status, and
 unresolved issues into a consolidated, human-readable report.
 
+The reporting instructions currently inlined at the end of `SKILL.md` are moved into
+this module. This separation means the report content can grow independently — new
+fields, new modules, or new validation checks — without requiring changes to `SKILL.md`
+itself. As each module completes, it documents its results in `migration-summary.md`;
+the reporting module reads this running document and produces the final summary.
+
 Responsibilities:
 - Produce `migration-summary.md` in the target directory.
 - Report must include at minimum: migration strategy, agent name and model, modules
   completed, checks passed, token usage, estimated cost, changes by module, validation
   results, unmigrated code (TODOs), removed code, and skill improvement suggestions.
-- The format is compatible with the existing migration report defined in `SKILL.md` so
-  that cross-run comparison (tokens, cost, coverage) remains possible.
+- `migration-summary.md` accumulates a timestamped entry per module per run, enabling
+  **cross-run comparison** (e.g. how rules passed, token usage, cost, and TODO count
+  evolved across successive runs against the same source).
+- The detailed requirements for cross-run comparison — format, required fields, and
+  tooling — will be discussed in a separate issue.
 
 Gate: **ALWAYS** — runs as the last module, after `cleanup`.
 
+## `migration-spec.yaml`
+
+`migration-spec.yaml` is a shared artefact written and read by multiple modules — no
+single module owns it. It serves as a running lookup document that accumulates insights
+across the migration lifecycle:
+
+- **`discovery`** writes source-app metadata (detected features, entities, services,
+  tool configuration).
+- **`planning`** appends strategy decisions and technology mappings.
+- **Transformation modules** (`build`, `code`, `frontend`, `testing`, `cleanup`) append
+  per-phase ledger entries and verification results as they execute.
+- **`reporting`** reads the full file to produce the final summary.
+
+The file preferably resides in the root of the target directory so it travels with the
+migrated project. The exact placement, schema, and versioning are deferred to
+[issue #79](https://github.com/quarkusio/skills/issues/79).
+
+### Gate evaluation: from live code scan to spec lookup
+
+Today the Decision Gate Table in `SKILL.md` instructs the agent to **inspect the
+project** at each module boundary to decide PASS or SKIP (e.g. "scan Java sources for
+Spring annotations"). This works but requires the agent to re-read source files for
+every gate check, consuming tokens and producing non-deterministic results.
+
+With `discovery` running first, `migration-spec.yaml` will possibly capture detected
+features — populated by the agent, code parsers, or deterministic scripts, depending on
+what tooling is available. The exact fields and how they are populated are still to be
+discussed as part of the schema work in
+[issue #79](https://github.com/quarkusio/skills/issues/79).
+
+Once those features are captured, the Decision Gate Table can be updated so that
+transformation modules read their gate condition from `migration-spec.yaml` rather than
+scanning source files at runtime. 
+
+This shift would make gating **deterministic** (same input → same gate result),
+**cheaper** (no re-scan at each module boundary), and **traceable** (the gate decision
+is recorded in the spec alongside the evidence that produced it).
+
+The exact field names, gate condition expressions, and any fallback behaviour when the
+spec is absent will be defined in [issue #79](https://github.com/quarkusio/skills/issues/79).
+
 ## Updated Decision Gate Table
+
+The gate check column below reflects the current live-scan approach. Once the
+`migration-spec.yaml` schema is finalised ([issue #79](https://github.com/quarkusio/skills/issues/79)),
+the gate checks for transformation modules will be updated to read from the spec instead.
 
 | Module | Gate Check | Gate Result |
 |---|---|---|
 | `prerequisite` | Environment and toolchain requirements | **ALWAYS** — abort migration if a hard requirement fails |
 | `discovery` | Source-app metadata extraction | **ALWAYS** |
 | `planning` | Strategy and spec generation, optional user confirmation | **ALWAYS** |
-| `build` | Spring Boot build markers present | **PASS** if found; **SKIP** otherwise |
-| `code` | Spring annotations in Java sources | **PASS** if found; **SKIP** otherwise |
-| `frontend` | Thymeleaf/JSP templates or static resources | **PASS** if found; **SKIP** otherwise |
-| `testing` | Spring test annotations in test sources | **PASS** if found; **SKIP** otherwise |
+| `build` | Spring Boot build markers in `pom.xml` / `build.gradle` → to be read from `migration-spec.yaml` | **PASS** if found; **SKIP** otherwise |
+| `code` | Spring annotations in Java sources → to be read from `migration-spec.yaml` | **PASS** if found; **SKIP** otherwise |
+| `frontend` | Thymeleaf/JSP templates or static resources → to be read from `migration-spec.yaml` | **PASS** if found; **SKIP** otherwise |
+| `testing` | Spring test annotations in test sources → to be read from `migration-spec.yaml` | **PASS** if found; **SKIP** otherwise |
 | `cleanup` | Leftover Spring artifacts after all other modules | **ALWAYS** |
 | `reporting` | End-of-run metrics and summary | **ALWAYS** |
 
