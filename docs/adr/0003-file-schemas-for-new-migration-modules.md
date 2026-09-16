@@ -57,9 +57,8 @@ The target directory name is always the source directory name with `-quarkus` ap
 
 ### 1. Annotated prose schemas in one ADR
 
-Document every schema as annotated YAML/JSON blocks in this ADR. The pattern is
-consistent with how `templates/migration-spec-template.yaml` already works, requires
-no new tooling, and surfaces all contracts in one reviewable document.
+Document every schema as annotated YAML/JSON blocks in this ADR. The pattern requires
+no new tooling and surfaces all contracts in one reviewable document.
 
 ---
 
@@ -353,9 +352,203 @@ validators diff the two copies to verify migration completeness.
 
 ### 4. `<source-name>-quarkus/migration-spec.yaml`
 
-The full template already exists in `templates/migration-spec-template.yaml`.
-No additional sections are introduced by the new modules beyond what is already
-defined in that template.
+**Written by**: `planning` (creates and populates); appended by every transformation module
+**Read by**: all transformation modules, `reporting`
+
+The binding contract between all modules. `planning` writes the initial structure after
+`discovery` completes; transformation modules append their ledger entries and
+verification results under `transformations` and `intermediate.history` as they
+execute. `reporting` reads the full file to produce `migration-summary.md`.
+
+```yaml
+project:
+  name:        "<string>"
+  description: "<string>"
+  source_path: "<string>"
+  target_path: "<string>"
+
+metadata:
+  application:    "<string>"
+  version:        "<string>"
+  complexity:     "low | medium | high | very_high"
+  generatedAt:    "<ISO-8601>"
+  schema_version: "1.0"
+
+execution:
+  mode:            "interactive | autonomous"
+  mode_source:     "argument | config-file | default"
+  strategy_source: "argument | config-file | ask | agent-selected"
+
+source_technology:
+  framework:           "Spring Boot"
+  spring_boot_version: "<string>"
+  java_version:        "<string>"
+  build_tool:          "maven | gradle"
+  base_package:        "<string>"
+  database:            "<string | null>"
+  messaging:           "<string | null>"
+  web_framework:       "<string | null>"
+  persistence:         "<string | null>"
+  security:            "<string | null>"
+  source_repo:         "<absolute-path>"
+
+target_technology:
+  runtime:            "Quarkus"
+  quarkus_version:    "<string>"
+  java_version:       "<string>"
+  build_tool:         "maven | gradle"
+  database:           "<string | null>"
+  messaging:          "<string | null>"
+  web_framework:      "<string | null>"
+  persistence:        "<string | null>"
+  target_repo:        "<absolute-path>"
+  quarkus_extensions: ["<string>"]
+
+detected_features:
+  spring_web:        "<boolean>"
+  spring_data_jpa:   "<boolean>"
+  spring_security:   "<boolean>"
+  spring_kafka:      "<boolean>"
+  spring_rabbitmq:   "<boolean>"
+  spring_jms:        "<boolean>"
+  spring_actuator:   "<boolean>"
+  spring_cloud:      "<boolean>"
+  spring_async:      "<boolean>"
+  spring_scheduled:  "<boolean>"
+  spring_cache:      "<boolean>"
+  spring_validation: "<boolean>"
+  spring_webflux:    "<boolean>"
+  has_frontend:      "<boolean>"
+  has_spring_tests:  "<boolean>"
+
+database:
+  product:     "postgresql | mysql | h2 | mariadb | oracle"
+  driver:      "<string>"
+  url_pattern: "<string | null>"
+
+entities:
+  - name:          "<string>"
+    source:        "<string>"
+    table:         "<string>"
+    pk_type:       "Long | String | UUID"
+    relationships: ["<string>"]
+    notes:         "<string | null>"
+
+services:
+  - name:         "<string>"
+    source:       "<string>"
+    type:         "@Service | @Component"
+    target:       "<string>"
+    target_scope: "@ApplicationScoped"
+    notes:        "<string | null>"
+
+repositories:
+  - name:           "<string>"
+    source:         "<string>"
+    type:           "JpaRepository | CrudRepository | ..."
+    entity:         "<string>"
+    target_type:    "PanacheRepository | PanacheEntity"
+    custom_methods: ["<string>"]
+    notes:          "<string | null>"
+
+messaging_listeners:
+  - name:              "<string>"
+    source:            "<string>"
+    type:              "@KafkaListener | @RabbitListener | @JmsListener"
+    topic:             "<string>"
+    target_annotation: "@Incoming(\"<channel>\")"
+    channel:           "<string>"
+
+messaging_producers:
+  - name:        "<string>"
+    source:      "<string>"
+    type:        "KafkaTemplate | RabbitTemplate | JmsTemplate"
+    topic:       "<string>"
+    target_type: "@Channel Emitter"
+
+rest_controllers:
+  - name:      "<string>"
+    source:    "<string>"
+    path:      "<string>"
+    endpoints: "<integer>"
+    target:    "<string>"
+    notes:     "<string | null>"
+
+configurations:
+  - name:            "<string>"
+    source:          "<string>"
+    beans:           ["<string>"]
+    target_strategy: "<string>"
+    notes:           "<string | null>"
+
+migration_strategy:
+  migration_mode:      "full-migration | spring-compatibility"
+  service_layer:       "application-scoped-cdi | spring-di-compat"
+  repository_layer:    "panache-repository | hibernate-orm-standard | spring-data-compat"
+  rest_framework:      "quarkus-rest | resteasy-classic | vertx-web | spring-web-compat"
+  messaging_transport: "kafka | amqp | artemis-jms | in-memory | none"
+  security_approach:   "none | oidc | basic | jwt | oauth2 | ldap | custom | mtls | spring-security-compat"
+  async_strategy:      "mutiny-uni | cdi-asynchronous"
+  persistence:         "hibernate-orm-panache | hibernate-orm"
+  view_layer:          "qute | myfaces | auto | none"
+
+compat_mode:
+  spring_di:              "<boolean>"
+  spring_web:             "<boolean>"
+  spring_data_jpa:        "<boolean>"
+  spring_scheduled:       "<boolean>"
+  spring_cache:           "<boolean>"
+  spring_boot_properties: "<boolean>"
+  spring_tx:              "<boolean>"
+  spring_security:        "<boolean>"
+
+decisions:
+  - decision: "<string>"
+    reason:   "<string>"
+
+skip:
+  - path:   "<string>"
+    reason: "<string>"
+
+unresolved_issues:
+  - module:          "<string>"
+    issue:           "<string>"
+    files:           ["<string>"]
+    attempted_fixes: "<integer>"
+    severity:        "ERROR | WARNING"
+
+approval_policy:
+  require_user_acceptance_after_each_module: "<boolean>"
+  max_compile_fix_retries_per_file:          3
+  on_manual_review_required:                 "pause-and-ask | document-and-continue"
+
+verification_rules:
+  <module-name>:
+    - "<string>"
+
+transformations:
+  <module-name>: []
+
+intermediate:
+  history:
+    - module:         "<string>"
+      run_at:         "<ISO-8601>"
+      status:         "success | partial | failed"
+      rules_total:    "<integer>"
+      rules_passed:   "<integer>"
+      rules_failed:   "<integer>"
+      verification_evidence:
+        - rule:     "<string>"
+          passed:   "<boolean>"
+          evidence: "<string>"
+```
+
+**Constraints**:
+- `detected_features` flags are written by `discovery` and are read-only for all subsequent modules.
+- `execution.mode` and `execution.mode_source` are set by the orchestrator before any module runs and must not be changed.
+- `compat_mode` flags are auto-derived by `planning` from `migration_strategy.migration_mode`; modules must not set them directly.
+- `intermediate.history` is append-only — existing entries must never be modified or deleted.
+- `unresolved_issues` is populated only in autonomous mode; in interactive mode the orchestrator pauses instead.
 
 ---
 
