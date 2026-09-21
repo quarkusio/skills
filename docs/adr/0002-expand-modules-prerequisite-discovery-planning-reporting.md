@@ -182,7 +182,12 @@ is recorded in the spec alongside the evidence that produced it).
 #### `detected_features` flags and their gate bindings
 
 The `detected_features` section of `migration-spec.yaml` uses the following flags.
-`discovery` writes them; transformation modules read them:
+`discovery` writes them; transformation modules read them.
+
+The table below is representative, not exhaustive. As new `code/` sub-modules are added
+(e.g. for service layer, web layer, persistence, database, security, scheduling etc.) additional flags are introduced alongside them. Every flag follows the same
+convention: one boolean per detectable Spring capability, named after the Spring concern
+it represents.
 
 | Flag | Type | Set to `true` when… |
 |---|---|---|
@@ -199,6 +204,7 @@ The `detected_features` section of `migration-spec.yaml` uses the following flag
 | `spring_cache` | bool | Source contains `@Cacheable` / `@CacheEvict` or a cache manager bean |
 | `spring_validation` | bool | Source contains `@Valid` / `@Validated` or JSR-380 constraint annotations |
 | `spring_webflux` | bool | Source contains reactive types (`Mono`, `Flux`) or WebFlux starters |
+| *(more flags…)* | bool | Added as new `code/` sub-modules are introduced |
 
 **Fallback:** if `migration-spec.yaml` is absent or a flag is missing, the agent falls
 back to a live code scan for that specific gate check and logs a warning. The spec
@@ -210,7 +216,7 @@ deferred to [issue #79](https://github.com/quarkusio/skills/issues/79).
 | Module | `detected_features` expression | Gate result |
 |---|---|---|
 | `build` | *(unconditional — build scaffolding is always needed)* | **ALWAYS** |
-| `code` | `spring_web OR spring_data_jpa OR spring_security OR spring_async OR spring_scheduled OR spring_cache OR spring_validation OR spring_webflux` | **PASS** if any is `true`; **SKIP** otherwise |
+| `code` | *(sub-flow — see below)* | each sub-module evaluated independently |
 | `frontend` | *(no dedicated flag — `discovery` inspects `templates/` and `static/` directly and records result in a `has_frontend` flag)* | **PASS** if `has_frontend: true`; **SKIP** otherwise |
 | `testing` | *(no dedicated flag — `discovery` scans test sources for `@SpringBootTest` / `@WebMvcTest` / `@MockBean` and records result in a `has_spring_tests` flag)* | **PASS** if `has_spring_tests: true`; **SKIP** otherwise |
 
@@ -218,6 +224,15 @@ deferred to [issue #79](https://github.com/quarkusio/skills/issues/79).
 > With `migration-spec.yaml` in place, `build` runs unconditionally — if `discovery`
 > confirmed this is a Spring Boot project, the build scaffold always needs migration.
 > The existing PASS/SKIP logic becomes redundant.
+
+> **Note on `code` sub-modules:** `modules/code/` is not a single file — it contains
+> one file per migration concern (e.g. `weblayer-migration.md`, `service-migration.md`,
+> `persistence-migration.md`, `database-migration.md`, `messaging-migration.md`, and
+> others). Each sub-module file declares its own gate condition, mapped to the specific
+> `detected_features` flag(s) that signal its concern is present in the source app. The
+> agent iterates over all `code/` sub-modules in order, evaluating and executing (or
+> skipping) each one independently. New sub-modules may be added without modifying
+> anything outside `modules/code/` and the `detected_features` flag set.
 
 > **Note on `frontend` and `testing`:** these two modules depend on path-presence
 > checks rather than Spring annotation flags. `discovery` will write two additional
@@ -277,20 +292,16 @@ FOR module IN [prerequisite, discovery, planning,
                       (discovery confirmed this is a Spring Boot project;
                        build scaffolding always needs migration)
 
-       code         → if spec != null:
-                        PASS if any of detected_features.spring_web,
-                                         detected_features.spring_data_jpa,
-                                         detected_features.spring_security,
-                                         detected_features.spring_async,
-                                         detected_features.spring_scheduled,
-                                         detected_features.spring_cache,
-                                         detected_features.spring_validation,
-                                         detected_features.spring_webflux
-                             is true
-                        SKIP otherwise
-                      if spec == null:
-                        fall back to live scan — inspect Java sources for Spring
-                        annotations; log "WARN: migration-spec.yaml absent, used live scan"
+       code         → sub-flow: for each sub-module file in modules/code/ (e.g.
+                        weblayer, service, persistence, database, messaging, …):
+                          if spec != null:
+                            PASS if the detected_features flag(s) declared by that
+                                 sub-module are true
+                            SKIP otherwise
+                          if spec == null:
+                            fall back to live scan for that sub-module's concern;
+                            log "WARN: migration-spec.yaml absent, used live scan"
+                      each sub-module is evaluated, executed, and logged independently
 
        frontend     → if spec != null:
                         PASS if detected_features.has_frontend == true
@@ -347,7 +358,12 @@ FOR module IN [prerequisite, discovery, planning,
 | `discovery` | Source-app metadata extraction | **ALWAYS** |
 | `planning` | Strategy and spec generation, optional user confirmation | **ALWAYS** |
 | `build` | Project confirmed as Spring Boot by `discovery` | **ALWAYS** |
-| `code` | `detected_features`: any of `spring_web`, `spring_data_jpa`, `spring_security`, `spring_async`, `spring_scheduled`, `spring_cache`, `spring_validation`, `spring_webflux` is `true` | **PASS** if any is `true`; **SKIP** otherwise |
+| `code` → `weblayer` | `detected_features` flag(s) for web layer presence | **PASS** / **SKIP** per sub-module gate |
+| `code` → `service` | `detected_features` flag(s) for service layer presence | **PASS** / **SKIP** per sub-module gate |
+| `code` → `persistence` | `detected_features` flag(s) for persistence layer presence | **PASS** / **SKIP** per sub-module gate |
+| `code` → `database` | `detected_features` flag(s) for direct database access presence | **PASS** / **SKIP** per sub-module gate |
+| `code` → `messaging` | `detected_features` flag(s) for messaging presence | **PASS** / **SKIP** per sub-module gate |
+| `code` → *(further sub-modules)* | `detected_features` flag(s) declared by each new sub-module | **PASS** / **SKIP** per sub-module gate |
 | `frontend` | `detected_features.has_frontend` | **PASS** if `true`; **SKIP** otherwise |
 | `testing` | `detected_features.has_spring_tests` | **PASS** if `true`; **SKIP** otherwise |
 | `cleanup` | Leftover Spring artifacts after all other modules | **ALWAYS** |
