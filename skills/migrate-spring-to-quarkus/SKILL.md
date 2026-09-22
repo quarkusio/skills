@@ -93,6 +93,7 @@ After the user has chosen a strategy, check if the target project is a git repos
 | [jdk](modules/jdk/jdk.md)                     | JDK 21+ required                                   | **ALWAYS** -- stop migration if < 21 |
 | [build](modules/build/build.md)               | Spring Boot parent/starters/`spring-boot-maven-plugin` in `pom.xml`, or Spring Boot/`io.spring.dependency-management` plugins in `build.gradle(.kts)` | **PASS** if Spring Boot build markers found; **SKIP** otherwise                          |
 | [code](modules/code/code.md)                  | Spring annotations in Java sources (`@Component`, `@Service`, `@Controller`, `@Repository`, `@Entity`, `@Autowired`, etc.) | **PASS** if Spring annotations found; **SKIP** otherwise                                 |
+| [messaging](modules/code/messaging.md)        | `@KafkaListener`, `@RabbitListener`, `@JmsListener`, `@SendTo`, `@EnableKafka`, `@EnableRabbit`, `KafkaTemplate`, `RabbitTemplate`, or `JmsTemplate` in Java sources | **PASS** if any found; **SKIP** otherwise                                                |
 | [frontend](modules/frontend/frontend.md)      | Thymeleaf/JSP templates in `templates/` or static resources in `static/`                                                  | **PASS** if view layer found; **SKIP** otherwise                                         |
 | [testing](modules/testing/testing.md)         | Spring test annotations in test sources (`@SpringBootTest`, `@WebMvcTest`, `@MockBean`)                                   | **PASS** if Spring tests found; **SKIP** otherwise                                       |
 | [cleanup](modules/cleanup/cleanup.md)         | Leftover Spring artifacts after all other modules                                                                          | **ALWAYS** — runs after all other modules                                                |
@@ -100,7 +101,7 @@ After the user has chosen a strategy, check if the target project is a git repos
 ### Execution Protocol
 
 ```
-FOR module IN [build, code, frontend, testing, cleanup]:
+FOR module IN [build, code, messaging, frontend, testing, cleanup]:
 
   1. EVALUATE — inspect the project for the gate condition
   2. DECIDE
@@ -110,7 +111,9 @@ FOR module IN [build, code, frontend, testing, cleanup]:
   3. LOAD — read the module file and relevant reference files
   4. EXECUTE — follow the module instructions, adapting to the chosen strategy
   5. COMPILE — run the project's compile command (`./mvnw clean compile -DskipTests` for Maven, `./gradlew clean compileJava -x test` for Gradle)
-     Fails → diagnose and fix before proceeding
+     Fails → load [modules/compile-fix.md](modules/compile-fix.md) and follow the retry procedure.
+             If compile-fix reports MANUAL_REVIEW_REQUIRED (unresolved errors after 3 retries),
+             ask the user whether to continue with the next module or stop the migration.
   6. LOG — mark checkbox as done
 ```
 

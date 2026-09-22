@@ -28,7 +28,7 @@ public record ProjectConfig(
     public Map<String, CheckConfig> checks() {
         if (checks == null) return Map.of();
         var normalized = new LinkedHashMap<String, CheckConfig>();
-        checks.forEach((k, v) -> normalized.put(k, v == null ? new CheckConfig(null) : v));
+        checks.forEach((k, v) -> normalized.put(k, v == null ? new CheckConfig(null, null, null) : v));
         return normalized;
     }
 

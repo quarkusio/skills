@@ -34,6 +34,8 @@ public class ProjectVerifier {
 
     private static final int PORT_RANGE_START = 8080;
     private static final int PORT_RANGE_END = 8180;
+    private int endpointMaxRetries = CheckConfig.DEFAULT_RETRIES;
+    private int endpointRetryDelayMs = CheckConfig.DEFAULT_RETRY_DELAY_MS;
 
     private int findFreePort() {
         for (int port = PORT_RANGE_START; port <= PORT_RANGE_END; port++) {
@@ -113,11 +115,14 @@ public class ProjectVerifier {
     /**
      * Start the app, hit each endpoint defined in project.yaml, and verify responses.
      */
-    public boolean smokeTest(List<EndpointCheck> endpoints) {
+    public boolean smokeTest(CheckConfig config) {
+        List<EndpointCheck> endpoints = config.endpoints();
         if (endpoints == null || endpoints.isEmpty()) {
-            System.out.println("      no endpoints defined — skipping");
+            System.out.println("      no endpoints defined -- skipping");
             return true;
         }
+        endpointMaxRetries = config.effectiveRetries();
+        endpointRetryDelayMs = config.effectiveRetryDelayMs();
 
         Path startupLog = projectDir.resolve(".startup.log");
         Process process = null;
@@ -128,14 +133,15 @@ public class ProjectVerifier {
                 return false;
             }
 
-            System.out.println("Calling the endpoints to validate");
+            System.out.printf("      app started on port %d, testing %d endpoint(s)%n", appPort, endpoints.size());
             boolean allPassed = true;
             try (HttpClient client = HttpClient.newBuilder()
                     .connectTimeout(Duration.ofSeconds(5))
                     .build()) {
                 for (EndpointCheck ep : endpoints) {
                     if (!process.isAlive()) {
-                        System.out.println("      app process crashed. Cannot access the endpoint " + ep.path());
+                        System.out.println("      app process crashed before testing " + ep.effectiveMethod() + " " + ep.path());
+                        dumpStartupLog(startupLog, "app crashed mid-smoke-test");
                         return false;
                     }
                     boolean ok = testEndpoint(client, ep);
@@ -196,7 +202,7 @@ public class ProjectVerifier {
             case "no-spring-deps" -> noSpringDeps();
             case "has-quarkus" -> hasQuarkus();
             case "starts-up" -> startsUp();
-            case "smoke-test" -> smokeTest(checkConfig.endpoints());
+            case "smoke-test" -> smokeTest(checkConfig);
             case "no-thymeleaf" -> noThymeleaf();
             default -> throw new IllegalArgumentException("Unknown check: " + checkName);
         };
@@ -247,48 +253,73 @@ public class ProjectVerifier {
 
     private boolean testEndpoint(HttpClient client, EndpointCheck ep) {
         String url = "http://localhost:" + appPort + ep.path();
-        try {
-            HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .timeout(Duration.ofSeconds(10));
+        int expected = ep.effectiveExpectedStatus();
+        String lastError = null;
+        int attempt = 0;
 
-            switch (ep.effectiveMethod()) {
-                case "POST" -> reqBuilder
-                        .header("Content-Type", "application/json")
-                        .POST(HttpRequest.BodyPublishers.ofString(ep.body() != null ? ep.body() : ""));
-                case "PUT" -> reqBuilder
-                        .header("Content-Type", "application/json")
-                        .PUT(HttpRequest.BodyPublishers.ofString(ep.body() != null ? ep.body() : ""));
-                case "DELETE" -> reqBuilder.DELETE();
-                default -> reqBuilder.GET();
+        for (attempt = 1; attempt <= endpointMaxRetries; attempt++) {
+            try {
+                HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .timeout(Duration.ofSeconds(10));
+
+                switch (ep.effectiveMethod()) {
+                    case "POST" -> reqBuilder
+                            .header("Content-Type", "application/json")
+                            .POST(HttpRequest.BodyPublishers.ofString(ep.body() != null ? ep.body() : ""));
+                    case "PUT" -> reqBuilder
+                            .header("Content-Type", "application/json")
+                            .PUT(HttpRequest.BodyPublishers.ofString(ep.body() != null ? ep.body() : ""));
+                    case "DELETE" -> reqBuilder.DELETE();
+                    default -> reqBuilder.GET();
+                }
+
+                HttpResponse<String> response = client.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
+                int actual = response.statusCode();
+
+                if (actual == 404 && expected != 404 && attempt < endpointMaxRetries) {
+                    // Transient 404: route not registered yet, retry
+                    lastError = "404";
+                } else {
+                    // Definitive response: evaluate status and body
+                    boolean statusOk = actual == expected;
+                    boolean bodyOk = ep.bodyContains() == null || ep.bodyContains().isBlank()
+                            || response.body().contains(ep.bodyContains());
+
+                    if (!statusOk) {
+                        System.out.printf("      FAIL %s %s -> %d (expected %d) [body: %.200s]%n",
+                                ep.effectiveMethod(), ep.path(), actual, expected,
+                                response.body() != null ? response.body() : "<empty>");
+                    } else if (!bodyOk) {
+                        System.out.printf("      FAIL %s %s -> body missing '%s' [body: %.200s]%n",
+                                ep.effectiveMethod(), ep.path(), ep.bodyContains(),
+                                response.body() != null ? response.body() : "<empty>");
+                    } else {
+                        String retryInfo = attempt > 1 ? " (after " + attempt + " attempts)" : "";
+                        System.out.printf("      OK   %s %s -> %d%s%n",
+                                ep.effectiveMethod(), ep.path(), actual, retryInfo);
+                    }
+                    return statusOk && bodyOk;
+                }
+            } catch (IOException | InterruptedException e) {
+                // Transient transport error (refused, timeout, etc.), retry
+                lastError = e.getMessage();
+                if (attempt == endpointMaxRetries) break;
             }
 
-            HttpResponse<String> response = client.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
-
-            int actual = response.statusCode();
-            int expected = ep.effectiveExpectedStatus();
-            boolean statusOk = actual == expected;
-            boolean bodyOk = ep.bodyContains() == null || ep.bodyContains().isBlank()
-                    || response.body().contains(ep.bodyContains());
-
-            if (!statusOk) {
-                System.out.printf("      FAIL %s %s → %d (expected %d)%n",
-                        ep.effectiveMethod(), ep.path(), actual, expected);
-            } else if (!bodyOk) {
-                System.out.printf("      FAIL %s %s → body missing '%s'%n",
-                        ep.effectiveMethod(), ep.path(), ep.bodyContains());
-            } else {
-                System.out.printf("      OK   %s %s → %d%n",
-                        ep.effectiveMethod(), ep.path(), actual);
+            // Common retry path for both transient 404 and transport errors
+            System.out.printf("      RETRY %s %s -> %s (attempt %d/%d)%n",
+                    ep.effectiveMethod(), ep.path(), lastError, attempt, endpointMaxRetries);
+            try {
+                Thread.sleep(endpointRetryDelayMs);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                break;
             }
-
-            return statusOk && bodyOk;
-
-        } catch (Exception e) {
-            System.out.printf("      FAIL %s %s → %s%n",
-                    ep.effectiveMethod(), ep.path(), e.getMessage());
-            return false;
         }
+        System.out.printf("      FAIL %s %s -> %s (after %d attempts)%n",
+                ep.effectiveMethod(), ep.path(), lastError, attempt);
+        return false;
     }
 
     // -- maven / file helpers --

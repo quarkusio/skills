@@ -186,6 +186,22 @@
 | `TestRestTemplate` | RestAssured (`given().when().get(...)`) | — | |
 | `@LocalServerPort` | `@TestHTTPResource` | — | |
 
+## Messaging
+
+No compat extension exists for messaging — always full migration regardless of overall strategy.
+
+| Spring | Quarkus | Connector (`mp.messaging.*.connector=`) |
+|---|---|---|
+| `@KafkaListener(topics = "t", groupId = "g")` | `@Incoming("t")` on method + `mp.messaging.incoming.t.group.id=g` in properties | `smallrye-kafka` |
+| `@RabbitListener(queues = "q")` | `@Incoming("q")` on method | `smallrye-rabbitmq` — not `smallrye-amqp` |
+| `@JmsListener(destination = "d")` | `@Incoming("d")` on method | `smallrye-jms` |
+| `@SendTo("reply")` | `@Outgoing("reply-out")` paired with `@Incoming` on same method | Fixed destinations only; no SpEL equivalent |
+| `KafkaTemplate.send("t", payload)` | `@Channel("t-out") Emitter<T>` + `emitter.send(payload)` | `smallrye-kafka` |
+| `RabbitTemplate.convertAndSend("q", payload)` | `@Channel("q-out") Emitter<T>` + `emitter.send(payload)` | `smallrye-rabbitmq` |
+| `JmsTemplate.convertAndSend("d", payload)` | `@Channel("d-out") Emitter<T>` + `emitter.send(payload)` | `smallrye-jms` |
+
+**Channel naming rule:** SmallRye Reactive Messaging rejects identical names for `@Incoming` and `@Outgoing` channels (`SRMSG00073`). Use `-out` suffix on outgoing channel names; the underlying broker topic/queue stays the same.
+
 ## Application Lifecycle
 
 | Spring | Quarkus | Notes |

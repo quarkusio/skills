@@ -29,10 +29,15 @@
 
 ## Messaging
 
-| Spring Boot | Quarkus |
-|---|---|
-| `spring-boot-starter-amqp` | `quarkus-smallrye-reactive-messaging-amqp` |
-| `spring-kafka` | `quarkus-smallrye-reactive-messaging-kafka` |
+| Spring Boot starter | `pom.xml` extension (Quarkus 3.x) | `mp.messaging.*.connector=` |
+|---|---|---|
+| `spring-kafka` | `quarkus-messaging-kafka` | `smallrye-kafka` |
+| `spring-boot-starter-amqp` (RabbitMQ / AMQP 0-9-1) | `quarkus-messaging-rabbitmq` | `smallrye-rabbitmq` |
+| AMQP 1.0 brokers (Azure Service Bus, Artemis AMQP mode) | `quarkus-messaging-amqp` | `smallrye-amqp` |
+| `spring-boot-starter-activemq` / `spring-boot-starter-artemis` | `io.quarkiverse.artemis:quarkus-artemis-jms`¹ + `io.smallrye.reactive:smallrye-reactive-messaging-jms`² | `smallrye-jms` |
+
+¹ Quarkiverse extension — not in the Quarkus platform; declare with explicit groupId.
+² In the Quarkus 3.x BOM — no version declaration needed.
 
 ## Templating
 
