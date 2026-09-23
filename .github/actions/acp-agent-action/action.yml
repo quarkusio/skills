@@ -59,7 +59,7 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        jbang app install --name acp "io.smallrye.ai:acp-java-client:${{ inputs.acp_version }}:runner"
+        jbang app install --name acp "io.smallrye.ai:acp-java-client:${{ inputs.smallrye_acp_version }}:runner"
         acp -h
 
     - name: Install IBM Bob agent
