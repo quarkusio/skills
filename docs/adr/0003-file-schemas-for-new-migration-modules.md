@@ -82,6 +82,13 @@ This ADR includes annotated YAML/JSON examples that serve as the schema for each
 > as part of its work. Filenames for such files must be documented in the module's own
 > `.md` file and must not collide with the schema'd files listed above.
 
+> **Source of truth for overlapping data**: `repo-metadata.json`, `dependency-analysis.yaml`,
+> and `code-metadata.yaml` are intermediate artifacts written by `discovery` and consumed
+> by `planning`. Once `planning` has written `migration-spec.yaml`, that file becomes the
+> authoritative source of truth for all subsequent modules. If the same field (e.g.
+> `detected_features`, `database`, `messaging`) appears in both `repo-metadata.json` and
+> `migration-spec.yaml` and they diverge, `migration-spec.yaml` governs.
+
 ---
 
 ### 1. `<source-name>/migration-metadata/repo-metadata.json`
@@ -94,6 +101,7 @@ rescan source code.
 
 ```jsonc
 {
+  "schema_version": "1.0",            // increment on breaking field changes
   "project": {
     "name":                "<string>",  // pom.xml / build.gradle artifactId
     "type":                "Spring Boot",
@@ -105,6 +113,9 @@ rescan source code.
 
   // Boolean feature flags — drive gate checks and extension selection.
   // All flags MUST be true or false; never null.
+  // This is not an exhaustive list; new flags are added as more apps and
+  // technologies are encountered. All unknown flags default to false when absent.
+  // If this set grows too large, consider migrating to a flat string list instead.
   "detected_features": {
     "spring_web":        "<boolean>",
     "spring_data_jpa":   "<boolean>",
@@ -114,11 +125,14 @@ rescan source code.
     "spring_jms":        "<boolean>",
     "spring_actuator":   "<boolean>",
     "spring_cloud":      "<boolean>",
+    "spring_async":      "<boolean>",
+    "spring_scheduled":  "<boolean>",
     "spring_cache":      "<boolean>",
     "spring_validation": "<boolean>",
-    "spring_thymeleaf":  "<boolean>"
-    // Additional boolean flags may be added without a version bump
-    // as long as they default to false when absent.
+    "spring_thymeleaf":  "<boolean>",
+    "spring_webflux":    "<boolean>",
+    "has_frontend":      "<boolean>",
+    "has_spring_tests":  "<boolean>"
   },
 
   "components": {
@@ -153,19 +167,19 @@ rescan source code.
   },
 
   "database": {
-    "type":              "<string>",    // h2 | postgresql | mysql | oracle | ...
+    "type":              "<string>",    // common values; not exhaustive: h2 | postgresql | mysql | mariadb | oracle | mssql | ...
     "driver":            "<string>",
     "supports_multiple": "<boolean>",
     "alternatives":      ["<string>"], // profile-activated alternatives
-    "init_mode":         "script | always | never | embedded | ...",
+    "init_mode":         "script | always | never | embedded | ...",  // common values; not exhaustive
     "schema_location":   "<string | null>",
     "data_location":     "<string | null>"
   },
 
-  "messaging": { "provider": "kafka | rabbitmq | jms | null" },
+  "messaging": { "provider": "kafka | rabbitmq | jms | null" },  // common values; not exhaustive
 
   "view_technology": {
-    "type":              "thymeleaf | jsp | jsf | freemarker | none",
+    "type":              "thymeleaf | jsp | jsf | freemarker | none",  // common values; not exhaustive
     "template_count":    "<integer>",
     "template_location": "<string | null>"
   },
@@ -211,19 +225,19 @@ quarkus_extensions:
   - <string>                       # e.g. quarkus-rest-jackson
 
 database:
-  primary: h2 | postgresql | mysql | mariadb | oracle | mssql
+  primary: h2 | postgresql | mysql | mariadb | oracle | mssql  # common values; not exhaustive
   drivers:
     - <string>                     # JDBC driver class
   products:
     - <string>                     # human-readable product name
 
 messaging:
-  provider: kafka | rabbitmq | jms | null
+  provider: kafka | rabbitmq | jms | null  # common values; not exhaustive
 
 view_technology:
-  spring:             thymeleaf | jsp | jsf | freemarker | none
-  quarkus:            qute | myfaces | none
-  migration_strategy: migrate_to_qute | maintain_jsf_myfaces | none
+  spring:             thymeleaf | jsp | jsf | freemarker | none  # common values; not exhaustive
+  quarkus:            qute | myfaces | none                      # common values; not exhaustive
+  migration_strategy: migrate_to_qute | maintain_jsf_myfaces | none  # common values; not exhaustive
   reason: "<string | null>"        # e.g. "Thymeleaf not supported in Quarkus"
 
 # Non-starter runtime dependencies that need explicit mapping
@@ -245,12 +259,15 @@ notes:
 **Written by**: `discovery` module or the Java validator CLI
 (`migration-validator.jar extract metadata <project-root> -o code-metadata.yaml`)
 **Read by**: persistence, service, web, and UI validators
+(validators as defined in [#39](https://github.com/quarkusio/skills/issues/39)
 
 Deep structural extract of all Java source files. An identical copy is generated for
 the target at `<source-name>-quarkus/migration-metadata/code-metadata.yaml`;
 validators diff the two copies to verify migration completeness.
 
 ```yaml
+# Schema version — increment on breaking structural changes
+schema_version: "1.0"
 # Single-element YAML sequence — envelope allows future multi-module support.
 - entities:
     - original_file:        "<string>"    # relative to project root
@@ -403,6 +420,9 @@ target_technology:
   target_repo:        "<absolute-path>"
   quarkus_extensions: ["<string>"]
 
+# Not exhaustive — new flags are added as more apps and technologies are encountered.
+# All unknown flags default to false when absent.
+# If this set grows too large, consider migrating to a flat string list instead.
 detected_features:
   spring_web:        "<boolean>"
   spring_data_jpa:   "<boolean>"
@@ -416,12 +436,13 @@ detected_features:
   spring_scheduled:  "<boolean>"
   spring_cache:      "<boolean>"
   spring_validation: "<boolean>"
+  spring_thymeleaf:  "<boolean>"
   spring_webflux:    "<boolean>"
   has_frontend:      "<boolean>"
   has_spring_tests:  "<boolean>"
 
 database:
-  product:     "postgresql | mysql | h2 | mariadb | oracle"
+  product:     "postgresql | mysql | h2 | mariadb | oracle"  # common values; not exhaustive
   driver:      "<string>"
   url_pattern: "<string | null>"
 
@@ -481,15 +502,15 @@ configurations:
     notes:           "<string | null>"
 
 migration_strategy:
-  migration_mode:      "full-migration | spring-compatibility"
-  service_layer:       "application-scoped-cdi | spring-di-compat"
-  repository_layer:    "panache-repository | hibernate-orm-standard | spring-data-compat"
-  rest_framework:      "quarkus-rest | resteasy-classic | vertx-web | spring-web-compat"
-  messaging_transport: "kafka | amqp | artemis-jms | in-memory | none"
-  security_approach:   "none | oidc | basic | jwt | oauth2 | ldap | custom | mtls | spring-security-compat"
-  async_strategy:      "mutiny-uni | cdi-asynchronous"
-  persistence:         "hibernate-orm-panache | hibernate-orm"
-  view_layer:          "qute | myfaces | auto | none"
+  migration_mode:      "full-migration | spring-compatibility"                                          # common values; not exhaustive
+  service_layer:       "application-scoped-cdi | spring-di-compat"                                     # common values; not exhaustive
+  repository_layer:    "panache-repository | hibernate-orm-standard | spring-data-compat"              # common values; not exhaustive
+  rest_framework:      "quarkus-rest | resteasy-classic | vertx-web | spring-web-compat"               # common values; not exhaustive
+  messaging_transport: "kafka | amqp | artemis-jms | in-memory | none"                                 # common values; not exhaustive
+  security_approach:   "none | oidc | basic | jwt | oauth2 | ldap | custom | mtls | spring-security-compat"  # common values; not exhaustive
+  async_strategy:      "mutiny-uni | cdi-asynchronous"                                                 # common values; not exhaustive
+  persistence:         "hibernate-orm-panache | hibernate-orm"                                         # common values; not exhaustive
+  view_layer:          "qute | myfaces | auto | none"                                                   # common values; not exhaustive
 
 compat_mode:
   spring_di:              "<boolean>"
@@ -543,6 +564,8 @@ intermediate:
 ```
 
 **Constraints**:
+- This file is authoritative for all fields it shares with `repo-metadata.json` and
+  `dependency-analysis.yaml`; if they diverge, values here govern.
 - `detected_features` flags are written by `discovery` and are read-only for all subsequent modules.
 - `execution.mode` and `execution.mode_source` are set by the orchestrator before any module runs and must not be changed.
 - `compat_mode` flags are auto-derived by `planning` from `migration_strategy.migration_mode`; modules must not set them directly.
