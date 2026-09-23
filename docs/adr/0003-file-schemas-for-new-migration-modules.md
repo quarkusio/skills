@@ -57,8 +57,7 @@ The target directory name is always the source directory name with `-quarkus` ap
 
 ### 1. Annotated prose schemas in one ADR
 
-Document every schema as annotated YAML/JSON blocks in this ADR. The pattern requires
-no new tooling and surfaces all contracts in one reviewable document.
+This ADR includes annotated YAML/JSON examples that serve as the schema for each file. All contracts are defined here, no external schema files or validation tools required.
 
 ---
 
