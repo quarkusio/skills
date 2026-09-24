@@ -71,7 +71,7 @@ This ADR includes annotated YAML/JSON examples that serve as the schema for each
 | `<source-name>/migration-metadata/dependency-analysis.yaml` | `discovery` | `planning` |
 | `<source-name>/migration-metadata/code-metadata.yaml` | `discovery` / validator CLI | persistence, service, web validators |
 | `<source-name>-quarkus/migration-spec.yaml` | `planning`; appended by all modules | all transformation modules, `reporting` |
-| `<source-name>-quarkus/migration-metadata/migration-context.json` | orchestrator; updated every module | all modules |
+| `<source-name>-quarkus/migration-metadata/migration-context.json` | the invoking agent; updated every module | all modules |
 | `<source-name>-quarkus/migration-metadata/code-metadata.yaml` | validator CLI (target copy) | persistence, service, web validators |
 | `<source-name>-quarkus/migration-reports/<module-name>-report.json` | each transformation module | `reporting` |
 | `<source-name>-quarkus/migration-metadata/testlogs.txt` | `testing` / `validation` (append) | `reporting` |
@@ -212,6 +212,7 @@ Compact dependency mapping that lets `planning` choose Quarkus extensions withou
 re-parsing `pom.xml` or `build.gradle`.
 
 ```yaml
+schema_version: "1.0"              # increment on breaking field changes
 build_tool: maven | gradle
 java_version: "<string>"           # source compiler level
 spring_boot_version: "<string>"
@@ -390,11 +391,6 @@ metadata:
   generatedAt:    "<ISO-8601>"
   schema_version: "1.0"
 
-execution:
-  mode:            "interactive | autonomous"
-  mode_source:     "argument | config-file | default"
-  strategy_source: "argument | config-file | ask | agent-selected"
-
 source_technology:
   framework:           "Spring Boot"
   spring_boot_version: "<string>"
@@ -502,7 +498,6 @@ configurations:
     notes:           "<string | null>"
 
 migration_strategy:
-  migration_mode:      "full-migration | spring-compatibility"                                          # common values; not exhaustive
   service_layer:       "application-scoped-cdi | spring-di-compat"                                     # common values; not exhaustive
   repository_layer:    "panache-repository | hibernate-orm-standard | spring-data-compat"              # common values; not exhaustive
   rest_framework:      "quarkus-rest | resteasy-classic | vertx-web | spring-web-compat"               # common values; not exhaustive
@@ -537,11 +532,6 @@ unresolved_issues:
     attempted_fixes: "<integer>"
     severity:        "ERROR | WARNING"
 
-approval_policy:
-  require_user_acceptance_after_each_module: "<boolean>"
-  max_compile_fix_retries_per_file:          3
-  on_manual_review_required:                 "pause-and-ask | document-and-continue"
-
 verification_rules:
   <module-name>:
     - "<string>"
@@ -567,16 +557,14 @@ intermediate:
 - This file is authoritative for all fields it shares with `repo-metadata.json` and
   `dependency-analysis.yaml`; if they diverge, values here govern.
 - `detected_features` flags are written by `discovery` and are read-only for all subsequent modules.
-- `execution.mode` and `execution.mode_source` are set by the orchestrator before any module runs and must not be changed.
-- `compat_mode` flags are auto-derived by `planning` from `migration_strategy.migration_mode`; modules must not set them directly.
 - `intermediate.history` is append-only — existing entries must never be modified or deleted.
-- `unresolved_issues` is populated only in autonomous mode; in interactive mode the orchestrator pauses instead.
+- `unresolved_issues` is populated only in autonomous mode; in interactive mode the invoking agent pauses instead.
 
 ---
 
 ### 5. `<source-name>-quarkus/migration-metadata/migration-context.json`
 
-**Written by**: orchestrator; updated by every module
+**Written by**: the invoking agent; updated by every module
 **Read by**: all modules
 
 ```jsonc
@@ -847,7 +835,7 @@ module table (§3) accurately reflects the current run state.
 ├── migration-spec.yaml                 §4  written by planning; appended by all modules
 ├── migration-summary.md                §8  written by reporting
 ├── migration-metadata/
-│   ├── migration-context.json          §5  written by orchestrator; updated by all
+│   ├── migration-context.json          §5  written by the invoking agent; updated by all
 │   ├── code-metadata.yaml              §3  target copy written by validator CLI
 │   └── testlogs.txt                    §7  appended by testing / validation
 │   
