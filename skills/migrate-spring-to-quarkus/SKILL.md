@@ -112,7 +112,7 @@ If the strategy was resolved from an argument or config file, log: `Strategy: <v
 ### Execution Protocol
 
 ```
-FOR module IN [build, code, messaging, frontend, testing, cleanup]:
+FOR module IN [jdk, build, code, messaging, frontend, testing, cleanup]:
 
   1. EVALUATE — inspect <source> for the gate condition
   2. DECIDE
