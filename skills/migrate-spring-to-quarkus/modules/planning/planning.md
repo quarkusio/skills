@@ -137,6 +137,8 @@ Every decision in the `decisions` block has a corresponding `<field>_source` fie
 
    For each field found, use its value directly and set the corresponding `*_source` field to `config-file`. Skip asking the user for that decision.
 
+   > **Do NOT validate or override user-provided values.** When `quarkus_version` or any other field comes from a skill argument or config file, use it exactly as provided. Do not check it against the API response or substitute a different value.
+
 Only proceed to ask the user (or apply defaults) for decisions not already resolved by steps 2–3.
 
 **In interactive mode**, present all unresolved Stage 1 questions together in a single message:
