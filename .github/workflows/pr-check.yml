@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: read
-  statuses: write
 
 env:
   JAVA_VERSION: '21'
@@ -51,20 +50,6 @@ jobs:
           name: pr-meta
           path: /tmp/pr-meta/
           retention-days: 1
-
-      - name: Set early AI Skill Run status
-        if: github.event_name == 'pull_request' && steps.detect.outputs.skills_changed == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.repos.createCommitStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              sha: context.sha,
-              state: 'pending',
-              context: 'AI Skill Run',
-              description: 'Waiting for PR Check to complete...'
-            });
 
   build-tests:
     name: Build test harness

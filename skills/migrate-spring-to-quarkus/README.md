@@ -25,7 +25,7 @@ The skill will analyze your project, ask you to choose a strategy, and execute t
 
 If you run the skill without any configuration, it will ask you to choose a migration strategy and confirm the Quarkus and Java versions before starting.
 
-### Project config file
+### Autonomous mode
 
 Add a `.quarkus-migration.yml` file to your project root to pre-configure the migration:
 
