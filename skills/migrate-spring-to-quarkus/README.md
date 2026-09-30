@@ -4,7 +4,7 @@ Modular, gate-driven migration of Spring Boot applications to Quarkus. Supports 
 
 ## Quick Start
 
-From your Spring Boot project directory:
+From your Spring Boot project directory, launch an AI agent using the following prompt message:
 
 ```
 Migrate this Spring Boot project to Quarkus
@@ -70,14 +70,13 @@ If multiple sources provide a value for the same decision, the first match wins:
 
 ## How It Works
 
-The skill follows a 6-step process:
+The skill follows a 5-step process:
 
 1. **Analyze** — scans your project (build files, Java code, config, templates, tests)
 2. **Choose strategy** — resolved from config or asked interactively
 3. **Execute modules** — runs each migration module through an automatic gate system
-4. **Verify** — 6 post-migration checks (builds, no Spring deps, tests pass, app starts, etc.)
+4. **Verify** — 6 post-migration checks (builds, no Spring deps, tests pass, app starts and smoke-tests.)
 5. **Review** — self-reflection report with what migrated, what didn't, and why
-6. **Commit** — optional git branch + draft PR workflow
 
 ### Gate System
 
@@ -126,19 +125,6 @@ skills/migrate-spring-to-quarkus/
     └── config-map.md                 #   Spring -> Quarkus config property mapping
 ```
 
-## Running Individual Modules
-
-You can run a single module without executing the full migration:
-
-```
-Run only the build module
-```
-```
-Re-run the frontend module
-```
-
-The module will use the current project state and the chosen strategy (if already decided).
-
 ## Post-Migration Checks
 
 After all modules complete, the skill runs 6 verification checks:
@@ -151,14 +137,6 @@ After all modules complete, the skill runs 6 verification checks:
 | 4 | Tests pass | All tests pass with `@QuarkusTest` |
 | 5 | Starts up | `mvn quarkus:dev` starts, health endpoint returns UP |
 | 6 | No leftover templates | No remaining Thymeleaf/JSP references |
-
-## Git Workflow (optional)
-
-If your project is a git repo, the skill can isolate each migration in its own branch:
-
-- Branch: `migration/run-01`, `migration/run-02`, ...
-- Single commit with all changes + migration report
-- Draft PR against `main` for review (never merged — serves as a permanent diff record)
 
 ## Related
 
