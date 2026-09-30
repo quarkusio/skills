@@ -108,12 +108,15 @@ jobs:
           persist-credentials: false
           path: base
 
-      - name: Check out PR code
+      - name: Check out PR skills only (sparse checkout, markdown only)
         uses: actions/checkout@v6
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           persist-credentials: false
           path: pr
+          sparse-checkout: skills
+          sparse-checkout-cone-mode: true
+          allow-unsafe-pr-checkout: true
 
       - name: Set up JDK
         uses: actions/setup-java@v6
