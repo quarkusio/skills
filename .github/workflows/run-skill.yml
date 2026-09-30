@@ -15,6 +15,7 @@ permissions:
   contents: read
   statuses: write
   actions: read
+  pull-requests: write
 
 env:
   JAVA_VERSION: '21'
@@ -201,6 +202,83 @@ jobs:
               context: 'AI Skill Run',
               description: failed ? 'AI skill test failed' : 'AI skill test passed',
               target_url: '${{ steps.job.outputs.url }}'
+            });
+
+      - name: Post PR comment with results
+        if: github.event_name == 'workflow_run' && always()
+        uses: actions/github-script@v7
+        env:
+          TESTS_DIR: ${{ steps.ctx.outputs.tests_dir }}
+          JOB_URL: ${{ steps.job.outputs.url }}
+          PROJECT_NAME: spring-rest-api
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const sha = '${{ github.event.workflow_run.head_sha }}';
+            const failed = '${{ job.status }}' === 'failure';
+
+            // Find the PR associated with this commit
+            const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: sha,
+            });
+            if (prs.length === 0) {
+              core.info('No PR found for this commit — skipping comment');
+              return;
+            }
+            const prNumber = prs[0].number;
+
+            // Collect report files
+            const runsDir = path.join(process.env.TESTS_DIR, 'target', 'runs');
+            let reportContent = '';
+            let reportFiles = [];
+
+            if (fs.existsSync(runsDir)) {
+              reportFiles = fs.readdirSync(runsDir)
+                .filter(f => f.includes(process.env.PROJECT_NAME))
+                .sort();
+
+              const reportMd = reportFiles.find(f => f.endsWith('.report.md'));
+              if (reportMd) {
+                reportContent = fs.readFileSync(path.join(runsDir, reportMd), 'utf8');
+              }
+            }
+
+            const emoji = failed ? '❌' : '✅';
+            const status = failed ? 'failed' : 'succeeded';
+
+            let body = `## ${emoji} AI Skill Test Results\n\n`;
+            body += `Job running dummy skill and migration of **${process.env.PROJECT_NAME}** ${status}.\n\n`;
+            body += `### Command\n\n`;
+            body += '```bash\n';
+            body += `java -Dai.agent=ibm-bob \\\n`;
+            body += `     -Dai.projects=${process.env.PROJECT_NAME} \\\n`;
+            body += `     -Dai.skills=migrate-spring-to-quarkus \\\n`;
+            body += `     -Dai.review=true \\\n`;
+            body += `     -jar migration-tests.jar\n`;
+            body += '```\n\n';
+            body += `📋 [See job result](${process.env.JOB_URL})\n\n`;
+
+            if (reportContent) {
+              body += `### Migration Report\n\n`;
+              body += `<details>\n<summary>Click to expand</summary>\n\n`;
+              body += reportContent.substring(0, 60000);
+              body += `\n</details>\n\n`;
+            }
+
+            if (reportFiles.length > 0) {
+              body += `### Generated Files\n\n`;
+              reportFiles.forEach(f => { body += `- \`${f}\`\n`; });
+              body += `\nFull reports available in the [run-reports artifact](${process.env.JOB_URL}).\n`;
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: body,
             });
 
       - name: Upload run reports

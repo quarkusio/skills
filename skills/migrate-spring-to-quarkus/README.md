@@ -4,7 +4,7 @@ Modular, gate-driven migration of Spring Boot applications to Quarkus. Supports 
 
 ## Quick Start
 
-From your Spring Boot project directory, launch an AI agent using the following prompt message:
+Open a terminal and from your Spring Boot project directory, launch an AI agent using the following prompt message:
 
 ```
 Migrate this Spring Boot project to Quarkus
