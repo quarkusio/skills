@@ -1,6 +1,6 @@
 # Spring Boot to Quarkus Migration Skill
 
-Modular, gate-driven migration of Spring Boot applications to Quarkus. Supports both Spring compatibility extensions (`quarkus-spring-*`) and full Quarkus migration paths.
+Modular, gate-driven migration of Spring Boot applications to Quarkus. Supports both Spring compatibility extensions (`quarkus-spring-*`) and full Quarkus migration paths as documented on the migration [page](https://quarkus.io/spring/migrate/).
 
 ## Quick Start
 
