@@ -2,7 +2,7 @@
 
 Agent skills project for developing, maintaining Quarkus applications or migrating.
 
-The [tests](./tests) folder is a Jva AI framework that you can use to run a skill, define a project to be tested, apply checks on the project migrated. It uses [Smallrye ACP Java Lib](https://github.com/smallrye/smallrye-acp-client) to run an ACP agent from a registry.
+The [tests](./tests) folder is a Java AI framework that you can use to run a skill, define a project to be tested, apply checks on the project migrated. It uses [Smallrye ACP Java Lib](https://github.com/smallrye/smallrye-acp-client) to run an ACP agent from a registry.
 
 ## Installation
 
