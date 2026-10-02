@@ -88,7 +88,7 @@ Each module has a gate condition that determines whether it runs:
 | **planning** | Always — runs after prerequisite; generates `migration-spec.yaml` |
 | **build** | Spring Boot starters/plugins found in build file |
 | **code** | Spring annotations found in Java sources |
-| **frontend** | Thymeleaf/JSP templates or static resources found |
+| **frontend** | Thymeleaf, JSP, FreeMarker, JSF views or static resources found |
 | **testing** | Spring test annotations found in test sources |
 | **cleanup** | Always — runs after all other modules |
 
@@ -113,7 +113,13 @@ skills/migrate-spring-to-quarkus/
 │   │   ├── code.md                   #   Java code: annotations, DI, REST, Data, Security
 │   │   └── messaging.md              #   Messaging migration: Kafka, RabbitMQ, JMS -> Quarkus
 │   ├── frontend/
-│   │   └── frontend.md               #   Thymeleaf/JSP templates, static resources
+│   │   ├── frontend.md               #   View layer dispatcher & static resources
+│   │   ├── thymeleaf.md              #   Thymeleaf -> Qute
+│   │   ├── freemarker.md             #   FreeMarker -> Qute
+│   │   ├── jsp.md                    #   JSP -> Qute
+│   │   ├── jsf.md                    #   JSF router (Qute vs MyFaces)
+│   │   ├── jsf-qute.md               #   JSF -> Qute (<5 view files)
+│   │   └── jsf-myfaces.md            #   JSF -> MyFaces (>=5 view files)
 │   ├── testing/
 │   │   └── testing.md                #   Test migration: @SpringBootTest -> @QuarkusTest
 │   ├── cleanup/

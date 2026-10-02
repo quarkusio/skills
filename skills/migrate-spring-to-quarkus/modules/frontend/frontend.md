@@ -1,105 +1,69 @@
 # Module: Frontend / View Layer
 
-Migrate templates, static assets, and view-related code from Spring MVC + Thymeleaf to Quarkus + Qute.
+Migrate templates, static assets, and view-related code from Spring to Quarkus.
+
+Load [references/dependency-map.md](../../references/dependency-map.md) before starting.
 
 All files to transform are in `<target>` (already copied there by the build module). Do not modify `<source>`.
 
-Read `<target>/migration-spec.yaml` at module start:
-- Check `decisions.view_layer`:
-  - `qute`: Proceed with migration to Qute below.
-  - `myfaces`: Note that JSF/MyFaces migration is a follow-up implementation. Leave view code intact with a `// TODO: Migration required — JSF/MyFaces migration not yet supported` comment.
-  - `keep-jsp`: JSP is supported via `quarkus-undertow` in spring-compat mode. Leave JSP templates as-is; add `quarkus-undertow` to the build file if not already present. No template migration needed.
-  - `none`: Skip frontend migration.
+Read `<target>/migration-spec.yaml` at module start if it exists:
+- If `decisions.view_layer == 'none'`: Skip frontend migration.
+- If `decisions.view_layer` is `qute`, `myfaces`, or `freemarker`: Proceed with the steps below.
 
-## What to do
+## Instructions
 
-- [ ] Ensure `quarkus-rest-qute` dependency is in `<target>` build file
-- [ ] Convert Thymeleaf templates to Qute syntax in `<target>`
-- [ ] Move static resources from `<target>/src/main/resources/static/` to `<target>/src/main/resources/META-INF/resources/`
-- [ ] Remove Spring CSRF tokens from HTML and JavaScript in `<target>`
-- [ ] Rename template directories to match `@CheckedTemplate` class names
-- [ ] Compile: `cd <target> && ./mvnw clean compile -DskipTests` (Maven) or `cd <target> && ./gradlew clean compileJava -x test` (Gradle)
+### Step 1: Detect View Technologies in `<source>`
 
-## Dependency
+Inspect `<source>` to determine which view technologies are present:
 
-Use `quarkus-rest-qute` — **never** `quarkus-qute` alone:
-
-**Maven:**
-```xml
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-rest-qute</artifactId>
-</dependency>
-```
-
-**Gradle:**
-```groovy
-implementation 'io.quarkus:quarkus-rest-qute'
-```
-
-`quarkus-qute` is the standalone engine without REST integration. It will fail at runtime when JAX-RS resources return `TemplateInstance`. `quarkus-rest-qute` includes Qute and adds the REST integration layer.
-
-## Thymeleaf → Qute Syntax Conversion
-
-| Thymeleaf | Qute | Notes |
+| Technology | Detection Check in `<source>` | Sub-module to Load |
 |---|---|---|
-| `th:text="${name}"` | `{name}` | Direct expression |
-| `th:utext="${html}"` | `{html.raw}` | Unescaped HTML output |
-| `th:each="item : ${items}"` | `{#for item in items}...{/for}` | Loop |
-| `th:if="${condition}"` | `{#if condition}...{/if}` | Conditional |
-| `th:unless="${condition}"` | `{#if !condition}...{/if}` | Negated conditional |
-| `th:href="@{/path/{id}(id=${item.id})}"` | `href="/path/{item.id}"` | URL with path param |
-| `th:action="@{/submit}"` | `action="/submit"` | Form action |
-| `th:value="${value}"` | `value="{value}"` | Input value |
-| `th:class="${active ? 'on' : 'off'}"` | `class="{active ? 'on' : 'off'}"` | Conditional class |
-| `th:fragment="name"` | `{#include name /}` | Template fragment/include |
+| **Thymeleaf** | `.html` in `src/main/resources/templates/` with `th:*` attributes, or `spring-boot-starter-thymeleaf` in build file | [thymeleaf.md](thymeleaf.md) |
+| **JSP** | `.jsp` / `.jspx` in `src/main/webapp/` or `src/main/resources/META-INF/resources/`, `jstl`, or `tomcat-embed-jasper` in build file | [jsp.md](jsp.md) |
+| **FreeMarker** | `.ftl` / `.ftlh` / `.ftlx` in `src/main/resources/templates/`, `freemarker.*` imports, `FreeMarkerConfigurer` bean, or `spring-boot-starter-freemarker` | [freemarker.md](freemarker.md) |
+| **JSF** | `.xhtml` in `src/main/webapp/` or `src/main/resources/META-INF/resources/`, `faces-config.xml`, `@ManagedBean`, `@FacesConverter`, `@FacesValidator`, `@ViewScoped` | [jsf.md](jsf.md) |
 
-## Template File Location
+Multiple technologies may be present in the same project. If so, execute the relevant sub-modules in sequence.
 
-When using `@CheckedTemplate`, template files must match the enclosing class name:
+### Step 2: Move Static Resources
+
+Move static assets from Spring Boot locations to Quarkus `META-INF/resources`:
 
 ```
-templates/todos.html                    → templates/TodoResource/todos.html
-templates/todo-detail.html              → templates/TodoResource/todoDetail.html
-```
-
-## Qute Strict Data Map (Critical)
-
-Unlike Thymeleaf (which silently treats missing variables as null), Qute throws `TemplateException` if a template key is missing from the data map. **Every `.data()` call site must provide the same complete set of keys.** For example, if the template references `tasks`, `noTasks`, `totalPages`:
-
-- The **empty-result** path must include: `.data("tasks", List.of()).data("noTasks", true).data("totalPages", 0)`
-- The **has-results** path must include: `.data("noTasks", false)` in addition to actual data
-
-Start migration with `quarkus.qute.strict-rendering=false` and `quarkus.qute.property-not-found-strategy=output-original`, fix all missing variables, then enable strict mode.
-
-## Static Assets
-
-```
-# BEFORE (Spring Boot)
+# BEFORE (Spring Boot / Java EE)
 src/main/resources/static/css/style.css
 src/main/resources/static/js/app.js
+src/main/webapp/images/logo.png
 
 # AFTER (Quarkus)
 src/main/resources/META-INF/resources/css/style.css
 src/main/resources/META-INF/resources/js/app.js
+src/main/resources/META-INF/resources/images/logo.png
 ```
 
-## CSRF Token Removal
+### Step 3: Remove CSRF Tokens
 
-Quarkus does not use Spring Security's CSRF mechanism. Remove these from templates and JavaScript:
+Quarkus does not use Spring Security's CSRF mechanism in templates. Remove these from HTML and JavaScript:
 
 ```html
 <!-- DELETE from HTML: -->
 <meta name="_csrf" th:content="${_csrf.token}"/>
 <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
-<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+<input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 ```
 
 ```javascript
 // DELETE from JS:
-const token = document.querySelector('meta[name="_csrf"]').content;
-const header = document.querySelector('meta[name="_csrf_header"]').content;
-headers[header] = token;
+const token = document.querySelector('meta[name="_csrf"]')?.content;
+const header = document.querySelector('meta[name="_csrf_header"]')?.content;
 ```
 
-If the app needs CSRF protection in Quarkus, use `quarkus-csrf-reactive`.
+If the application requires CSRF protection in Quarkus, use `quarkus-rest-csrf`.
+
+### Step 4: Execute Technology Guides
+
+Execute each detected sub-module guide (`thymeleaf.md`, `jsp.md`, `freemarker.md`, `jsf.md`) and verify its Validation Checklist.
+
+### Step 5: Compile
+
+- [ ] Compile: `cd <target> && ./mvnw clean compile -DskipTests` (Maven) or `cd <target> && ./gradlew clean compileJava -x test` (Gradle)

@@ -39,12 +39,14 @@
 ¹ Quarkiverse extension — not in the Quarkus platform; declare with explicit groupId.
 ² In the Quarkus 3.x BOM — no version declaration needed.
 
-## Templating
+## Templating / View Layer
 
-| Spring Boot | Quarkus |
-|---|---|
-| `spring-boot-starter-thymeleaf` | `quarkus-rest-qute` (when controllers return `TemplateInstance`) or `quarkus-qute-web` (auto-serve templates without REST resources). **Never** use `quarkus-qute` alone — it lacks REST integration. |
-| `spring-boot-starter-freemarker` | `quarkus-freemarker` |
+| Spring Boot | Quarkus (Full / Qute) | Quarkus (Compat / Preserved) |
+|---|---|---|
+| `spring-boot-starter-thymeleaf` | `quarkus-rest-qute` (when controllers return `TemplateInstance`) or `quarkus-qute-web` (auto-serve templates without REST resources). **Never** use `quarkus-qute` alone — it lacks REST integration. | -- |
+| `spring-boot-starter-freemarker` | `quarkus-rest-qute` | `io.quarkiverse.freemarker:quarkus-freemarker` |
+| JSP (`jstl`, `tomcat-embed-jasper`) | `quarkus-rest-qute` | -- |
+| JSF / PrimeFaces | `quarkus-rest-qute` | `org.apache.myfaces.core.extensions.quarkus:myfaces-quarkus` (+ `io.quarkiverse.primefaces:quarkus-primefaces`) |
 
 ## Scheduling / DI / Config
 

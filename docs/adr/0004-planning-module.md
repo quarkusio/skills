@@ -150,7 +150,7 @@ The table below documents the intended contract between the planning module and 
 | `modules/build/` | `target_technology.quarkus_version`, `target_technology.java_version` — writes to `pom.xml` / `build.gradle` | Existing |
 | `modules/code/code.md` | `decisions.strategy`, `decisions.persistence` — branches between strategies | Existing |
 | `modules/code/messaging.md` | `decisions.messaging_transport` — targets the correct Quarkus connector | Existing |
-| `modules/frontend/frontend.md` | `decisions.view_layer` — chooses Qute vs. MyFaces vs. keep-jsp path | Existing |
+| `modules/frontend/frontend.md` | `decisions.view_layer` — chooses Qute vs. MyFaces path | Existing |
 | `modules/testing/testing.md` | `decisions.strategy` — adjusts test annotation replacement approach | Existing |
 | `modules/cleanup/cleanup.md` | `decisions.strategy` — determines which Spring imports are intentional | Existing |
 | Discovery module (#55) | Writes richer `detected_features` flags into the spec | Planned |
