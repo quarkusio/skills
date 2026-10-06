@@ -58,7 +58,7 @@ Load the relevant reference file when working on a module:
 | [messaging](modules/code/messaging.md)        | `@KafkaListener`, `@RabbitListener`, `@JmsListener`, `@SendTo`, `@EnableKafka`, `@EnableRabbit`, `KafkaTemplate`, `RabbitTemplate`, or `JmsTemplate` in Java sources | **PASS** if any found; **SKIP** otherwise                                                |
 | [frontend](modules/frontend/frontend.md)      | Thymeleaf/JSP templates in `templates/` or static resources in `static/`                                                  | **PASS** if view layer found; **SKIP** otherwise                                         |
 | [testing](modules/testing/testing.md)         | Spring test annotations in test sources (`@SpringBootTest`, `@WebMvcTest`, `@MockBean`)                                   | **PASS** if Spring tests found; **SKIP** otherwise                                       |
-| [cleanup](modules/cleanup/cleanup.md)         | Leftover Spring artifacts after all other modules                                                                          | **ALWAYS** — runs after all other modules                                                |
+| [cleanup](modules/cleanup/cleanup.md)         | Leftover Spring artifacts after all other modules                                                                          | **ALWAYS** -- runs after all other modules                                                |
 
 ### Execution Protocol
 
@@ -111,7 +111,18 @@ All verification checks run against `<target>`. Run each check in order. A check
 | 5 | **Starts up** | `cd <target> && ./mvnw quarkus:dev` / `cd <target> && ./gradlew quarkusDev` | App starts, `curl http://localhost:8080/q/health` returns UP |
 | 6 | **No leftover templates** | Search `<target>` for Thymeleaf/JSP references | None remaining (unless intentionally kept) |
 
-## Step 3: Migration Review (Self-Reflection)
+## Step 3: Reporting
+
+After verification completes, run the [reporting](modules/reporting/reporting.md) module. It reads the verification results and all per-module data to produce:
+
+- `<target>/migration-metadata/execution-metadata.json` -- agent, model, tokens, cost, timing, verification results
+- `<target>/migration-summary.md` -- full 13-section migration report
+
+The reporting module must run **after** verification so that it can include check results and record an accurate `finished_at` timestamp.
+
+### Console Summary
+
+After the reporting module completes, present the following directly to the user so they get an immediate overview without opening the generated files.
 
 Answer each question honestly:
 
@@ -119,12 +130,10 @@ Answer each question honestly:
 2. **What required manual judgment?** Non-obvious decisions made.
 3. **What was left as TODO?** Every `// TODO: Migration required` comment and why.
 4. **Was any code removed?** What, where, justification. Flag runtime risks.
-5. **What checks failed initially?** Failures from Step 2 and how you fixed them.
+5. **What checks failed initially?** Failures from verification and how you fixed them.
 6. **What's missing from the skill references?** Mappings you had to figure out.
 
-### Migration Report
-
-Present the review as a structured report:
+Then present the review as a structured report:
 
 ```
 ## Migration Report: [app-name]
