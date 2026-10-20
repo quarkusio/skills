@@ -87,12 +87,34 @@ Each module has a gate condition that determines whether it runs:
 | **prerequisite** | Always — stops migration if JDK or build tool hard check fails |
 | **planning** | Always — runs after prerequisite; generates `migration-spec.yaml` |
 | **build** | Spring Boot starters/plugins found in build file |
+| **persistence** | `@Entity`, `JpaRepository`, `CrudRepository`, or `@Repository` found in Java sources |
 | **code** | Spring annotations found in Java sources |
 | **frontend** | Thymeleaf, JSP, FreeMarker, JSF views or static resources found |
 | **testing** | Spring test annotations found in test sources |
 | **cleanup** | Always — runs after all other modules |
 
 Modules that don't apply are automatically skipped. After each module, the project is compiled to catch errors before moving on.
+
+### Validators
+
+The skill will try to run migration validators when running the module migrations. These validators require the [migration-tools MCP](https://github.com/snowdrop/migration-tool/tree/main/mcp) to be configured before running the migration. If it's not configured, the agent will simply skip the validator invocations.
+Here's a sample MCP configuration (might need to be adapted based on the used agent):
+
+```json
+{
+  "mcpServers": {
+    "mtools": {
+      "command": "java",
+      "args":[
+        "-Dmtool.allowed-dirs=/some/path,/other/path",
+        "-jar",
+        "/path/to/mtool/mcp-2.0.0-runner.jar"
+      ]
+    }
+  }
+}
+```
+Please keep the same name, since the skill references the MCP by name.
 
 ## Skill Structure
 
@@ -110,6 +132,7 @@ skills/migrate-spring-to-quarkus/
 │   │   ├── maven.md                  #   Maven-specific: pom.xml, dependencies, plugins
 │   │   └── gradle.md                 #   Gradle-specific: build.gradle(.kts), plugins
 │   ├── code/
+│   │   ├── persistence.md            #   JPA entities and repositories → Panache
 │   │   ├── code.md                   #   Java code: annotations, DI, REST, Data, Security
 │   │   └── messaging.md              #   Messaging migration: Kafka, RabbitMQ, JMS -> Quarkus
 │   ├── frontend/
@@ -126,11 +149,14 @@ skills/migrate-spring-to-quarkus/
 │   │   └── testing.md                #   Test migration: @SpringBootTest -> @QuarkusTest
 │   ├── cleanup/
 │   │   └── cleanup.md                #   Remove leftover Spring artifacts
+│   ├── reporting/
+│   │   └── reporting.md              #   Execution metadata, summary report, and module logs
 │   └── compile-fix.md                #   Retry procedure for compilation errors
 └── references/                       # Mapping tables loaded during migration
     ├── dependency-map.md             #   Spring -> Quarkus dependency mapping
     ├── annotation-map.md             #   Spring -> Quarkus annotation mapping
-    └── config-map.md                 #   Spring -> Quarkus config property mapping
+    ├── config-map.md                 #   Spring -> Quarkus config property mapping
+    └── mtools-mcp.md                 #   Analyze and validate projects via mtools MCP server
 ```
 
 ## Post-Migration Checks
