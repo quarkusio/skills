@@ -54,7 +54,8 @@ Load the relevant reference file when working on a module:
 | [prerequisite](modules/prerequisite/prerequisite.md) | JDK version, build tool (Maven ≥ 3.6 recommended 3.9+ / Gradle ≥ 7 recommended 8.x), container runtime                           | **ALWAYS** — **ABORT** entire migration if any hard check fails; no subsequent module runs |
 | [planning](modules/planning/planning.md)      | Prerequisite check passed                                                                                                 | **ALWAYS** — generates `<target>/migration-spec.yaml`                                    |
 | [build](modules/build/build.md)               | Spring Boot parent/starters/`spring-boot-maven-plugin` in `pom.xml`, or Spring Boot/`io.spring.dependency-management` plugins in `build.gradle(.kts)` | **PASS** if Spring Boot build markers found; **SKIP** otherwise                          |
-| [code](modules/code/code.md)                  | Spring annotations in Java sources (`@Component`, `@Service`, `@Controller`, `@Repository`, `@Entity`, `@Autowired`, etc.) | **PASS** if Spring annotations found; **SKIP** otherwise                                 |
+| [persistence](modules/code/persistence.md)    | `@Entity`, `JpaRepository`, `CrudRepository`, or `@Repository` in Java sources                                            | **PASS** if JPA/persistence annotations found; **SKIP** otherwise                        |
+| [code](modules/code/code.md)                  | Spring annotations in Java sources (`@Component`, `@Service`, `@Controller`, `@Autowired`, etc.) | **PASS** if Spring annotations found; **SKIP** otherwise                                 |
 | [messaging](modules/code/messaging.md)        | `@KafkaListener`, `@RabbitListener`, `@JmsListener`, `@SendTo`, `@EnableKafka`, `@EnableRabbit`, `KafkaTemplate`, `RabbitTemplate`, or `JmsTemplate` in Java sources | **PASS** if any found; **SKIP** otherwise                                                |
 | [frontend](modules/frontend/frontend.md)      | Thymeleaf/JSP templates in `templates/` or `webapp/`, static resources in `static/`, JSF XHTML files in `webapp/` or `META-INF/resources/`, FreeMarker templates (`.ftl`, `.ftlh`, `.ftlx`), `freemarker.*` imports, or `FreeMarkerConfigurer` bean | **PASS** if view layer found; **SKIP** otherwise                                         |
 | [testing](modules/testing/testing.md)         | Spring test annotations in test sources (`@SpringBootTest`, `@WebMvcTest`, `@MockBean`)                                   | **PASS** if Spring tests found; **SKIP** otherwise                                       |
@@ -72,7 +73,7 @@ STEP 0 — PREREQUISITE GATE (mandatory, runs before everything else)
        → log "Prerequisite gate: PASS — proceeding with migration"
        → continue to the module loop below
 
-FOR module IN [planning, build, code, messaging, frontend, testing, cleanup]:
+FOR module IN [planning, build, persistence, code, messaging, frontend, testing, cleanup]:
 
   1. EVALUATE — inspect <source> for the gate condition
   2. DECIDE
@@ -144,7 +145,7 @@ Then present the review as a structured report:
 - Strategy: [Full Migration / Spring Compatibility]
 - Agent: [AI agent name - e.g claude, pi, opencode, gemini, etc]
 - Model: [model name — e.g. claude-sonnet-4-6, check system context]
-- Modules completed: [X/8]
+- Modules completed: [X/9]
 - Checks passed: [X/6]
 - Token usage: [input tokens / output tokens — check session stats]
 - Estimated cost: [~$X.XX — token counts × per-model pricing from anthropic.com/pricing]

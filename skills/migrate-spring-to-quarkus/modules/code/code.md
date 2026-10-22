@@ -6,14 +6,11 @@ All files to transform are in `<target>` (already copied there by the build modu
 
 Read `<target>/migration-spec.yaml` at module start:
 - `decisions.strategy`: `full-quarkus` vs `spring-compat`
-- `decisions.persistence`: `panache-active-record` vs `panache-repository` vs `hibernate-orm`
 
 Load [references/annotation-map.md](../../references/annotation-map.md) before starting. It contains the complete annotation mapping tables for DI, REST, Data, Security, Cache, Scheduling, and Lifecycle.
 
 ## What to do
 
-- [ ] Migrate entities (JPA → Panache if full Quarkus strategy)
-- [ ] Migrate repositories (Spring Data → Panache if full Quarkus strategy)
 - [ ] Simplify service layer (remove unnecessary interface+impl)
 - [ ] Migrate controllers/resources (Spring MVC → JAX-RS if full Quarkus strategy)
 - [ ] Migrate DI annotations (`@Autowired` → `@Inject`, `@Component` → `@ApplicationScoped`, etc.)
@@ -23,62 +20,6 @@ Load [references/annotation-map.md](../../references/annotation-map.md) before s
 - [ ] Compile: `cd <target> && ./mvnw clean compile -DskipTests` (Maven) or `cd <target> && ./gradlew clean compileJava -x test` (Gradle)
 
 Use the annotation-map.md reference for the full mapping. Below are the key patterns with before/after examples.
-
-## Entity Layer (Full Quarkus strategy)
-
-```java
-// BEFORE: Spring Data JPA
-@Entity
-public class Todo {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    private String title;
-    private boolean completed;
-    // getters + setters
-}
-
-// AFTER: Panache Active Record
-@Entity
-public class Todo extends PanacheEntity {
-    public String title;
-    public boolean completed;
-    // id provided by PanacheEntity — remove @Id and @GeneratedValue
-    // public fields — remove getters/setters
-}
-```
-
-## Repository Layer (Full Quarkus strategy)
-
-Choose pattern based on `decisions.persistence` in `<target>/migration-spec.yaml`:
-
-**Active Record** (`panache-active-record` — queries on the entity):
-```java
-// Static methods on the entity
-public static List<Todo> findByCompleted(boolean completed) {
-    return list("completed", completed);
-}
-// Usage: Todo.listAll(), Todo.findById(id), Todo.findByCompleted(true)
-```
-
-**Repository class** (`panache-repository` — separate from entity):
-```java
-@ApplicationScoped
-public class TodoRepository implements PanacheRepository<Todo> {
-    public List<Todo> findByCompleted(boolean completed) {
-        return list("completed", completed);
-    }
-}
-```
-
-**Pagination** (replaces Spring's `Page<T>` + `Pageable`):
-```java
-PanacheQuery<Todo> query = find("completed", completed);
-query.page(Page.of(page, size));
-long totalCount = query.count();
-List<Todo> items = query.list();
-```
-
-**Spring compat strategy**: Keep `JpaRepository`/`CrudRepository` — they work with `quarkus-spring-data-jpa`.
 
 ## Service Layer
 
@@ -297,7 +238,6 @@ public class MyApp implements QuarkusApplication {
 
 - **Missing `@Transactional`**: Quarkus uses `jakarta.transaction.Transactional`, not Spring's
 - **Bean discovery**: Quarkus uses build-time CDI; beans must have a scope annotation
-- **No OSIV**: Quarkus doesn't have Open Session in View; lazy loading outside transactions will fail
 - **No component scanning**: Beans in external JARs need a Jandex index or `quarkus.index-dependency`
 - **JAX-RS path conflicts**: Spring allows overlapping `@RequestMapping` paths — JAX-RS does not. Check for duplicate `@Path` values
 
@@ -310,6 +250,5 @@ When using the compatibility strategy (`quarkus-spring-*` extensions), be aware 
 | `quarkus-spring-di` | `@Primary`, `@Conditional*`, `@Profile`, `@Lazy` not processed. SpEL `#{...}` in `@Value` throws error. `@Bean` must be inside `@Configuration` class. |
 | `quarkus-spring-web` | Only `@RestController` — plain `@Controller` not supported. Only one `@RestControllerAdvice` per app. `@CrossOrigin`, `@InitBinder`, `@ModelAttribute` not supported. No reactive types (`Mono`, `Flux`). |
 | `quarkus-spring-security` | Limited SpEL in `@PreAuthorize`: only `hasRole`, `hasAnyRole`, `permitAll`, `denyAll`, `isAuthenticated`, `@bean.method()`, param comparison. Cannot mix `and`/`or` operators. Cannot combine `@Secured` with `@PreAuthorize`. |
-| `quarkus-spring-data-jpa` | SpEL `#{...}` in `@Query` not supported. No `Distinct` queries. Limited custom repository fragment support. |
 | `quarkus-spring-cache` | Single cache name only (no arrays). `key`, `condition`, `unless`, `keyGenerator`, `cacheManager` parameters NOT supported. No `@Caching` or `@CacheConfig`. |
 | `quarkus-spring-scheduled` | `fixedDelay` NOT supported (only `fixedRate`). Cannot combine `initialDelay` with `cron`. |
