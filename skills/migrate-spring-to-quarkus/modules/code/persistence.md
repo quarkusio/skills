@@ -14,8 +14,7 @@ Load [references/annotation-map.md](../../references/annotation-map.md) before s
 
 - [ ] Migrate entities (JPA → Panache if full Quarkus strategy)
 - [ ] Migrate repositories (Spring Data → Panache if full Quarkus strategy)
-- [ ] Validate persistence layer (via mtools MCP if available)
-- [ ] Compile: `cd <target> && ./mvnw clean compile -DskipTests` (Maven) or `cd <target> && ./gradlew clean compileJava -x test` (Gradle)
+- [ ] Validate persistence layer. See section: Validation
 
 ## Entity Layer (Full Quarkus strategy)
 
@@ -81,25 +80,14 @@ When using the compatibility strategy (`quarkus-spring-data-jpa`), be aware of t
 |---|---|
 | `quarkus-spring-data-jpa` | SpEL `#{...}` in `@Query` not supported. No `Distinct` queries. Limited custom repository fragment support. |
 
-## Validation (mtools MCP)
+## Validation
 
-If the `mtools` MCP server is connected (see [references/mtools-mcp.md](../../references/mtools-mcp.md)), invoke the `sourceValidate` tool to verify entity and repository parity against the source project:
-
-```json
-{
-  "target": "<target>",
-  "source": "<source>",
-  "validator": "persistence",
-  "skipCompile": "false"
-}
-```
-
-- **If `mtools` MCP is available:**
-  - Execute `sourceValidate`.
-  - Review rules reported under `[PASS]`, `[FAIL]`, and `[WARN]`.
-  - Address any `[FAIL]` items (missing entity migrations, mismatched table/column names, ID strategy discrepancies, relationship mappings).
-- **If `mtools` MCP is not available:**
-  - Output message: `mtools MCP server is not available. Skipping automated persistence validation.`
+- **Read the instructions** of the **MCP tools** definition here: [references/mtools-mcp.md](../../references/mtools-mcp.md)
+- **Call** `sourceValidate` tool using arguments as defined part of the MCP Tools definition document
+ - Review rules reported under `[PASS]`, `[FAIL]`, and `[WARN]`.
+ - Address any `[FAIL]` items (missing entity migrations, mismatched table/column names, ID strategy discrepancies, relationship mappings).
+- **If `sourceValidate` tool is not available:**
+  - Output message: `source is not available. Skipping automated persistence validation.`
   - Proceed without failing the migration.
 
 ## Watch out
