@@ -119,11 +119,7 @@ Tracked modules (`MODULE_ORDER`): `planning, build, code, messaging, frontend, t
 | `reset <target> <module>` | Clear the module and all later modules from all lists and from `modules`; null out their `moduleReports` entries. |
 | `resume <target> [--accept-drift] [--max-resumes N]` | If `resumeCount >= maxResumes`: change nothing, print verdict `RESUME_LIMIT_REACHED`, exit 1. Otherwise increment `resumeCount`, clear `currentModule` (an interrupted module is re-run from its start), optionally refresh the fingerprint. `--max-resumes N` (1-9999) raises the limit. |
 
-All commands print JSON; failures exit 1 with `verdict: ERROR`. Writes go to a temp file in the
-same directory and are moved over the context file with `ATOMIC_MOVE`, so a crash mid-write
-never leaves a truncated file. Option values are validated (`--gate`, `--compile`,
-`--compile-attempts`); unknown options and options without a value are errors.
-
+All commands print JSON.
 ### Semantics
 
 - **Granularity is the module.** A module interrupted mid-run restarts from its beginning. This
