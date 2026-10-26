@@ -70,7 +70,7 @@ Extends ADR-0003 §5. All additions are optional-with-default, so this is not a 
 
 ```jsonc
 {
-  "schemaVersion":     "1.0",
+  "schema_version":     "1.0",
   "lastCheckpointAt":  "<ISO-8601>",
   "resumeCount":       0,                // incremented by `resume`
   "maxResumes":        5,                // `resume` refuses once resumeCount reaches this
@@ -115,7 +115,7 @@ Tracked modules (`MODULE_ORDER`): `planning, build, code, messaging, frontend, t
 | `init <target> <source>` | Create the context file. Reads `strategy` and `strategySource` from `migration-spec.yaml` if it already exists. Errors if the context file already exists. |
 | `status <target>` | Verdict `NOT_FOUND`, `CORRUPT`, `COMPLETE`, or `RESUMABLE`, plus `strategy`, `pendingModules`, `modules`, `drift`, `specWarning`, `missingReports`, `resumeCount`, `maxResumes`, `resumeLimitReached`. |
 | `start <target> <module>` | Set `currentModule`; write `modules.<module>.startedAt` and `status = in_progress`. |
-| `complete <target> <module> <completed\|skipped> [--gate G] [--reason R] [--compile C] [--compile-attempts N] [--report rel]` | Record outcome; update `modules.<module>` with gate, reason, compile status, finish time; idempotent. |
+| `complete <target> <module> <completed\|skipped> [--gate G] [--reason R] [--compile C] [--compile-attempts N] [--description D] [--report rel]` | Record outcome; update `modules.<module>` with gate, reason, compile status, finish time; idempotent. |
 | `reset <target> <module>` | Clear the module and all later modules from all lists and from `modules`; null out their `moduleReports` entries. |
 | `resume <target> [--accept-drift] [--max-resumes N]` | If `resumeCount >= maxResumes`: change nothing, print verdict `RESUME_LIMIT_REACHED`, exit 1. Otherwise increment `resumeCount`, clear `currentModule` (an interrupted module is re-run from its start), optionally refresh the fingerprint. `--max-resumes N` (1-9999) raises the limit. |
 
@@ -156,8 +156,6 @@ Top-level directories named `.git`, `target`, `build`, `.gradle`, and `migration
 
 ### Negative / Trade-offs
 
-- The skill now ships a ~870-line Java source file that must be maintained alongside the
-  schema, including its hand-written JSON reader and writer.
 - `java Checkpoint.java` compiles the source in memory on every invocation, adding a few
   tenths of a second per call (about 0.4 s measured), and the protocol makes several calls
   per module.
