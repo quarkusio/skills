@@ -70,7 +70,7 @@ Extends ADR-0003 §5. All additions are optional-with-default, so this is not a 
 
 ```jsonc
 {
-  "schema_version":     "1.0",
+  "schemaVersion":     "1.0",
   "lastCheckpointAt":  "<ISO-8601>",
   "resumeCount":       0,                // incremented by `resume`
   "maxResumes":        5,                // `resume` refuses once resumeCount reaches this
@@ -98,7 +98,7 @@ Extends ADR-0003 §5. All additions are optional-with-default, so this is not a 
 }
 ```
 
-Tracked modules (`MODULE_ORDER`): `planning, build, code, messaging, frontend, testing, cleanup`. List will be extended for future modules like discovery.
+Tracked modules (`MODULE_ORDER`): `planning, build, code, persistence, messaging, frontend, testing, cleanup`. List will be extended as new modules are added.
 `prerequisite`, verification, and `reporting` are not tracked because they re-run every time.
 
 ### Command interface
@@ -109,7 +109,7 @@ Tracked modules (`MODULE_ORDER`): `planning, build, code, messaging, frontend, t
 | Command | Effect |
 |---|---|
 | `init <target> <source>` | Create the context file. Reads `strategy` and `strategySource` from `migration-spec.yaml` if it already exists. Errors if the context file already exists. |
-| `status <target>` | Verdict `NOT_FOUND`, `CORRUPT` (unparseable JSON, or `modules` / `sourceRepo` missing), `COMPLETE`, or `RESUMABLE`, plus `strategy`, `completedModules`, `skippedModules`, `pendingModules`, `modules`, `drift`, `specWarning`, `missingReports`, `resumeCount`, `maxResumes`, `resumeLimitReached`. |
+| `status <target>` | Verdict `NOT_FOUND`, `CORRUPT` (unparseable JSON, or `modules` / `sourceRepo` missing), `COMPLETE`, or `RESUMABLE`, plus `strategy`, `completedModules`, `skippedModules`, `pendingModules`, `modules`, `drift`, `specWarning`, `missingReports`, `resumeCount`, `maxResumes`, `resumeLimitReached`. `completedModules`, `skippedModules`, and `pendingModules` are derived from `modules.<name>.status` (in `MODULE_ORDER`) when `status` runs. They appear only in this output and are not stored separately in `migration-context.json`. |
 | `start <target> <module>` | Set `currentModule`; write `modules.<module>.startedAt` and `status = in_progress`. |
 | `complete <target> <module> <completed\|skipped> [--gate G] [--reason R] [--compile C] [--compile-attempts N] [--description D] [--report rel]` | Record outcome; update `modules.<module>` with gate, reason, compile status, finish time; idempotent. |
 | `reset <target> <module>` | Remove the module and all later modules from `modules`, so they are pending again; null out their `moduleReports` entries. |
