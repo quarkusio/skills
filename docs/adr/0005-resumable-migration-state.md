@@ -78,7 +78,6 @@ Extends ADR-0003 §5. All additions are optional-with-default, so this is not a 
                                          // .git, target, build, .gradle, migration-metadata)
   "strategy":          "<string | null>",       // decisions.strategy from migration-spec.yaml
   "strategySource":    "<string | null>",       // decisions.strategy_source from migration-spec.yaml
-  "skippedModules":    ["<string>"],     // gate evaluated to SKIP
 
   // Per-module records — written by start and complete
   "modules": {
@@ -99,10 +98,7 @@ Extends ADR-0003 §5. All additions are optional-with-default, so this is not a 
 }
 ```
 
-`completedModules`, `currentModule`, and `moduleReports` keep the ADR-0003 meaning.
-`moduleReports.<module>` is populated by `complete ... --report <relpath>`.
-
-Tracked modules (`MODULE_ORDER`): `planning, build, code, messaging, frontend, testing, cleanup`.
+Tracked modules (`MODULE_ORDER`): `planning, build, code, messaging, frontend, testing, cleanup`. List will be extended for future modules like discovery.
 `prerequisite`, verification, and `reporting` are not tracked because they re-run every time.
 
 ### Command interface
@@ -113,10 +109,10 @@ Tracked modules (`MODULE_ORDER`): `planning, build, code, messaging, frontend, t
 | Command | Effect |
 |---|---|
 | `init <target> <source>` | Create the context file. Reads `strategy` and `strategySource` from `migration-spec.yaml` if it already exists. Errors if the context file already exists. |
-| `status <target>` | Verdict `NOT_FOUND`, `CORRUPT`, `COMPLETE`, or `RESUMABLE`, plus `strategy`, `pendingModules`, `modules`, `drift`, `specWarning`, `missingReports`, `resumeCount`, `maxResumes`, `resumeLimitReached`. |
+| `status <target>` | Verdict `NOT_FOUND`, `CORRUPT` (unparseable JSON, or `modules` / `sourceRepo` missing), `COMPLETE`, or `RESUMABLE`, plus `strategy`, `completedModules`, `skippedModules`, `pendingModules`, `modules`, `drift`, `specWarning`, `missingReports`, `resumeCount`, `maxResumes`, `resumeLimitReached`. |
 | `start <target> <module>` | Set `currentModule`; write `modules.<module>.startedAt` and `status = in_progress`. |
 | `complete <target> <module> <completed\|skipped> [--gate G] [--reason R] [--compile C] [--compile-attempts N] [--description D] [--report rel]` | Record outcome; update `modules.<module>` with gate, reason, compile status, finish time; idempotent. |
-| `reset <target> <module>` | Clear the module and all later modules from all lists and from `modules`; null out their `moduleReports` entries. |
+| `reset <target> <module>` | Remove the module and all later modules from `modules`, so they are pending again; null out their `moduleReports` entries. |
 | `resume <target> [--accept-drift] [--max-resumes N]` | If `resumeCount >= maxResumes`: change nothing, print verdict `RESUME_LIMIT_REACHED`, exit 1. Otherwise increment `resumeCount`, clear `currentModule` (an interrupted module is re-run from its start), optionally refresh the fingerprint. `--max-resumes N` (1-9999) raises the limit. |
 
 All commands print JSON.
