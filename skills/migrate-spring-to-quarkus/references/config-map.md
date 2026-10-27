@@ -31,7 +31,7 @@ This applies when there are no separate `application-{profile}.properties` files
 
 | Spring Boot | Quarkus |
 |---|---|
-| `spring.jpa.hibernate.ddl-auto=update` | `quarkus.hibernate-orm.database.generation=update` |
+| `spring.jpa.hibernate.ddl-auto=update` | `quarkus.hibernate-orm.schema-management.strategy=update` (before Quarkus 3.40: `quarkus.hibernate-orm.database.generation=update`) |
 | `spring.jpa.show-sql=true` | `quarkus.hibernate-orm.log.sql=true` |
 | `spring.jpa.properties.hibernate.dialect` | `quarkus.hibernate-orm.dialect` (usually auto-detected) |
 | `spring.jpa.properties.hibernate.format_sql` | `quarkus.hibernate-orm.log.format-sql=true` |

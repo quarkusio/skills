@@ -60,7 +60,7 @@ Ensure these are in the build file (should already be added by the build module)
 ```xml
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-junit5</artifactId>
+    <artifactId>quarkus-junit</artifactId>
     <scope>test</scope>
 </dependency>
 <dependency>
@@ -70,16 +70,16 @@ Ensure these are in the build file (should already be added by the build module)
 </dependency>
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-junit5-mockito</artifactId>
+    <artifactId>quarkus-junit-mockito</artifactId>
     <scope>test</scope>
 </dependency>
 ```
 
 **Gradle:**
 ```groovy
-testImplementation 'io.quarkus:quarkus-junit5'
+testImplementation 'io.quarkus:quarkus-junit'
 testImplementation 'io.rest-assured:rest-assured'
-testImplementation 'io.quarkus:quarkus-junit5-mockito'
+testImplementation 'io.quarkus:quarkus-junit-mockito'
 ```
 
 ## Watch out
