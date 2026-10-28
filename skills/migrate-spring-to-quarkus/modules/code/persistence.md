@@ -14,7 +14,8 @@ Load [references/annotation-map.md](../../references/annotation-map.md) before s
 
 - [ ] Migrate entities (JPA → Panache if full Quarkus strategy)
 - [ ] Migrate repositories (Spring Data → Panache if full Quarkus strategy)
-- [ ] Validate persistence layer. See section: Validation
+- [ ] **Validate persistence migration.** Read [references/mtools-mcp.md](../../references/mtools-mcp.md) for the MCP tool definition, then call `sourceValidate` with `validator: "persistence"` and the `<source>` and `<target>` paths. You MUST attempt this call. If the tool is not available, log "mtools MCP not available, skipping automated persistence validation" and proceed. If reachable, address any `[FAIL]` items before moving to the next module.
+
 
 ## Entity Layer (Full Quarkus strategy)
 
