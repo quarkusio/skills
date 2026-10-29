@@ -76,9 +76,6 @@ Extends ADR-0003 §5. All additions are optional-with-default, so this is not a 
   "maxResumes":        5,                // `resume` refuses once resumeCount reaches this
   "sourceFingerprint": "<16 hex chars>", // sha256 prefix of <source> (top-level exclusions only:
                                          // .git, target, build, .gradle, migration-metadata)
-  "strategy":          "<string | null>",       // decisions.strategy from migration-spec.yaml
-  "strategySource":    "<string | null>",       // decisions.strategy_source from migration-spec.yaml
-
   // Per-module records — written by start and complete
   "modules": {
     "<module-name>": {
@@ -108,20 +105,21 @@ Tracked modules (`MODULE_ORDER`): `planning, build, code, persistence, messaging
 
 | Command | Effect |
 |---|---|
-| `init <target> <source>` | Create the context file. Reads `strategy` and `strategySource` from `migration-spec.yaml` if it already exists. Errors if the context file already exists. |
-| `status <target>` | Verdict `NOT_FOUND`, `CORRUPT` (unparseable JSON, or `modules` / `sourceRepo` missing), `COMPLETE`, or `RESUMABLE`, plus `strategy`, `completedModules`, `skippedModules`, `pendingModules`, `modules`, `drift`, `specWarning`, `missingReports`, `resumeCount`, `maxResumes`, `resumeLimitReached`. `completedModules`, `skippedModules`, and `pendingModules` are derived from `modules.<name>.status` (in `MODULE_ORDER`) when `status` runs. They appear only in this output and are not stored separately in `migration-context.json`. |
+| `init <target> <source>` | Create the context file. Errors if the context file already exists. |
+| `status <target>` | Verdict `NOT_FOUND`, `CORRUPT` (unparseable JSON, or `modules` / `sourceRepo` missing), `COMPLETE`, or `RESUMABLE`, plus `completedModules`, `skippedModules`, `pendingModules`, `modules`, `drift`, `specWarning`, `missingReports`, `resumeCount`, `maxResumes`, `resumeLimitReached`. `completedModules`, `skippedModules`, and `pendingModules` are derived from `modules.<name>.status` (in `MODULE_ORDER`) when `status` runs. They appear only in this output and are not stored separately in `migration-context.json`. |
 | `start <target> <module>` | Set `currentModule`; write `modules.<module>.startedAt` and `status = in_progress`. |
 | `complete <target> <module> <completed\|skipped> [--gate G] [--reason R] [--compile C] [--compile-attempts N] [--description D] [--report rel]` | Record outcome; update `modules.<module>` with gate, reason, compile status, finish time; idempotent. |
 | `reset <target> <module>` | Remove the module and all later modules from `modules`, so they are pending again; null out their `moduleReports` entries. |
 | `resume <target> [--accept-drift] [--max-resumes N]` | If `resumeCount >= maxResumes`: change nothing, print verdict `RESUME_LIMIT_REACHED`, exit 1. Otherwise increment `resumeCount`, clear `currentModule` (an interrupted module is re-run from its start), optionally refresh the fingerprint. `--max-resumes N` (1-9999) raises the limit. |
 
 All commands print JSON.
+
 ### Semantics
 
 - **Granularity is the module.** A module interrupted mid-run restarts from its beginning. This
   is safe because modules read `<source>` and write `<target>`.
 - **A module is `completed` once the agent has run it and written its report.**
-- **`<target>` decisions are final.** On resume, strategy, versions, and `decisions.*` come from
+- **`<target>` decisions are final.** On resume, versions, and `decisions.*` come from
   `migration-spec.yaml` and are not re-asked.
 - **Drift.** If `<source>` changed since the fingerprint was taken, completed modules may be stale.
   Interactive: ask. Non-interactive: start fresh.
