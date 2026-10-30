@@ -1,0 +1,5 @@
+{
+  "type": "http",
+  "name": "analyze-tools",
+  "url": "http://localhost:8080/mcp"
+}
