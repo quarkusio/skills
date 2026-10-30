@@ -372,193 +372,66 @@ schema_version: "1.0"
 **Written by**: `planning` (creates and populates); appended by every transformation module
 **Read by**: all transformation modules, `reporting`
 
-The binding contract between all modules. `planning` writes the initial structure after
-`discovery` completes; transformation modules append their ledger entries and
-verification results under `transformations` and `intermediate.history` as they
-execute. `reporting` reads the full file to produce `migration-summary.md`.
+The binding contract between all modules. `planning` writes the initial structure; transformation modules read it to drive their work. `reporting` reads the full file to produce `migration-summary.md`.
 
 ```yaml
 project:
-  name:        "<string>"
-  description: "<string>"
-  source_path: "<string>"
-  target_path: "<string>"
-
-metadata:
-  application:    "<string>"
-  version:        "<string>"
-  complexity:     "low | medium | high | very_high"
-  generatedAt:    "<ISO-8601>"
-  schema_version: "1.0"
+  name:        "<source-name>-quarkus"
+  source_path: "<string>"   # absolute path to the source Spring project
+  target_path: "<string>"   # absolute path to the Quarkus target directory
 
 source_technology:
-  framework:           "Spring Boot"
-  spring_boot_version: "<string>"
-  java_version:        "<string>"
-  build_tool:          "maven | gradle"
-  base_package:        "<string>"
-  database:            "<string | null>"
-  messaging:           "<string | null>"
-  web_framework:       "<string | null>"
-  persistence:         "<string | null>"
-  security:            "<string | null>"
-  source_repo:         "<absolute-path>"
+  spring_boot_version: "<string>"   # e.g. "3.3.0"
+  java_version:        "<string>"   # source compiler level, e.g. "17"
+  build_tool:          "Maven | Gradle"
 
 target_technology:
-  runtime:            "Quarkus"
-  quarkus_version:    "<string>"
-  java_version:       "<string>"
-  build_tool:         "maven | gradle"
-  database:           "<string | null>"
-  messaging:          "<string | null>"
-  web_framework:      "<string | null>"
-  persistence:        "<string | null>"
-  target_repo:        "<absolute-path>"
-  quarkus_extensions: ["<string>"]
+  quarkus_version: "<string>"   # resolved via code.quarkus.io/api/streams
+  java_version:    "<string>"   # target JDK level
+  build_tool:      "Maven | Gradle"
 
 # Not exhaustive — new flags are added as more apps and technologies are encountered.
 # All unknown flags default to false when absent.
-# If this set grows too large, consider migrating to a flat string list instead.
 detected_features:
-  spring_web:        "<boolean>"
-  spring_data_jpa:   "<boolean>"
-  spring_security:   "<boolean>"
-  spring_kafka:      "<boolean>"
-  spring_rabbitmq:   "<boolean>"
-  spring_jms:        "<boolean>"
-  spring_actuator:   "<boolean>"
-  spring_cloud:      "<boolean>"
-  spring_async:      "<boolean>"
-  spring_scheduled:  "<boolean>"
-  spring_cache:      "<boolean>"
-  spring_validation: "<boolean>"
-  spring_thymeleaf:  "<boolean>"
-  spring_webflux:    "<boolean>"
-  has_frontend:      "<boolean>"
-  has_spring_tests:  "<boolean>"
+  spring_web:      "<boolean>"
+  spring_data_jpa: "<boolean>"
+  spring_security: "<boolean>"
+  spring_kafka:    "<boolean>"
+  spring_rabbitmq: "<boolean>"
+  spring_jms:      "<boolean>"
+  spring_scheduled: "<boolean>"
+  spring_cache:    "<boolean>"
+  view_layer:      "<boolean>"   # true when any view technology is detected
 
-database:
-  product:     "postgresql | mysql | h2 | mariadb | oracle"  # common values; not exhaustive
-  driver:      "<string>"
-  url_pattern: "<string | null>"
-
-entities:
-  - name:          "<string>"
-    source:        "<string>"
-    table:         "<string>"
-    pk_type:       "Long | String | UUID"
-    relationships: ["<string>"]
-    notes:         "<string | null>"
-
-services:
-  - name:         "<string>"
-    source:       "<string>"
-    type:         "@Service | @Component"
-    target:       "<string>"
-    target_scope: "@ApplicationScoped"
-    notes:        "<string | null>"
-
-repositories:
-  - name:           "<string>"
-    source:         "<string>"
-    type:           "JpaRepository | CrudRepository | ..."
-    entity:         "<string>"
-    target_type:    "PanacheRepository | PanacheEntity"
-    custom_methods: ["<string>"]
-    notes:          "<string | null>"
-
-messaging_listeners:
-  - name:              "<string>"
-    source:            "<string>"
-    type:              "@KafkaListener | @RabbitListener | @JmsListener"
-    topic:             "<string>"
-    target_annotation: "@Incoming(\"<channel>\")"
-    channel:           "<string>"
-
-messaging_producers:
-  - name:        "<string>"
-    source:      "<string>"
-    type:        "KafkaTemplate | RabbitTemplate | JmsTemplate"
-    topic:       "<string>"
-    target_type: "@Channel Emitter"
-
-rest_controllers:
-  - name:      "<string>"
-    source:    "<string>"
-    path:      "<string>"
-    endpoints: "<integer>"
-    target:    "<string>"
-    notes:     "<string | null>"
-
-configurations:
-  - name:            "<string>"
-    source:          "<string>"
-    beans:           ["<string>"]
-    target_strategy: "<string>"
-    notes:           "<string | null>"
-
-migration_strategy:
-  service_layer:       "application-scoped-cdi | spring-di-compat"                                     # common values; not exhaustive
-  repository_layer:    "panache-repository | hibernate-orm-standard | spring-data-compat"              # common values; not exhaustive
-  rest_framework:      "quarkus-rest | resteasy-classic | vertx-web | spring-web-compat"               # common values; not exhaustive
-  messaging_transport: "kafka | amqp | artemis-jms | in-memory | none"                                 # common values; not exhaustive
-  security_approach:   "none | oidc | basic | jwt | oauth2 | ldap | custom | mtls | spring-security-compat"  # common values; not exhaustive
-  async_strategy:      "mutiny-uni | cdi-asynchronous"                                                 # common values; not exhaustive
-  persistence:         "hibernate-orm-panache | hibernate-orm"                                         # common values; not exhaustive
-  view_layer:          "qute | myfaces | auto | none"                                                   # common values; not exhaustive
-
-compat_mode:
-  spring_di:              "<boolean>"
-  spring_web:             "<boolean>"
-  spring_data_jpa:        "<boolean>"
-  spring_scheduled:       "<boolean>"
-  spring_cache:           "<boolean>"
-  spring_boot_properties: "<boolean>"
-  spring_tx:              "<boolean>"
-  spring_security:        "<boolean>"
-
+# All migration decisions recorded with their resolution source.
+# *_source values: argument | config-file | user | default
 decisions:
-  - decision: "<string>"
-    reason:   "<string>"
+  strategy:                    "full-quarkus | spring-compat"
+  strategy_source:             "argument | config-file | user | default"
+  quarkus_version_source:      "argument | config-file | user | default"   # resolved value in target_technology.quarkus_version
+  java_version_source:         "argument | config-file | user | default"   # resolved value in target_technology.java_version
+  persistence:                 "panache-active-record | panache-repository | hibernate-orm | none"
+  persistence_source:          "argument | config-file | user | default"
+  rest_framework:              "quarkus-rest | resteasy-classic | none"
+  rest_framework_source:       "argument | config-file | user | default"
+  messaging_transport:         "kafka | amqp | artemis-jms | none"
+  messaging_transport_source:  "argument | config-file | user | default"
+  view_layer:                  "qute | myfaces | freemarker | none"
+  view_layer_source:           "argument | config-file | user | default"
+  security_approach:           "oidc | basic | jwt | none"
+  security_approach_source:    "argument | config-file | user | default"
 
-skip:
-  - path:   "<string>"
-    reason: "<string>"
-
-unresolved_issues:
-  - module:          "<string>"
-    issue:           "<string>"
-    files:           ["<string>"]
-    attempted_fixes: "<integer>"
-    severity:        "ERROR | WARNING"
-
-verification_rules:
-  <module-name>:
-    - "<string>"
-
-transformations:
-  <module-name>: []
-
-intermediate:
-  history:
-    - module:         "<string>"
-      run_at:         "<ISO-8601>"
-      status:         "success | partial | failed"
-      rules_total:    "<integer>"
-      rules_passed:   "<integer>"
-      rules_failed:   "<integer>"
-      verification_evidence:
-        - rule:     "<string>"
-          passed:   "<boolean>"
-          evidence: "<string>"
+metadata:
+  complexity:   "low | medium | high"   # low: <10 components; medium: 10–50; high: >50
+  generatedAt:  "<ISO-8601>"            # actual timestamp from `date -u`
 ```
 
 **Constraints**:
 - This file is authoritative for all fields it shares with `repo-metadata.json` and
   `dependency-analysis.yaml`; if they diverge, values here govern.
-- `detected_features` flags are written by `discovery` and are read-only for all subsequent modules.
-- `intermediate.history` is append-only — existing entries must never be modified or deleted.
-- `unresolved_issues` is populated only in autonomous mode; in interactive mode the invoking agent pauses instead.
+- `detected_features` flags are written by `planning` via source scan and are read-only for all subsequent modules.
+- `metadata.generatedAt` must be set from the actual system clock (`date -u +"%Y-%m-%dT%H:%M:%SZ"`); it must never be hardcoded or guessed.
+- `decisions.*_source` must be set for every decision field and must accurately reflect how the value was resolved (skill argument, config file, interactive user response, or non-interactive default).
 
 ---
 
