@@ -1,0 +1,25 @@
+{
+  "skill": "migrate-spring-to-quarkus",
+  "executions": [
+    {
+      "id": "core_tools",
+      "description": "Every migration must use Read, Bash, Write or Edit to perform actual work",
+      "session_log_pattern": "*.json",
+      "expected_tools": ["Read", "Bash"],
+      "min_calls": [
+        { "tool": "Read", "min": 5 },
+        { "tool": "Bash", "min": 3 }
+      ]
+    },
+    {
+      "id": "mcp_source_validate",
+      "description": "When mtools MCP server is available, the agent must attempt sourceValidate",
+      "session_log_pattern": "*_full.json",
+      "expected_tools": ["sourceValidate"],
+      "min_calls": [
+        { "tool": "sourceValidate", "min": 1 }
+      ],
+      "required": true
+    }
+  ]
+}

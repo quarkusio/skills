@@ -1,0 +1,125 @@
+{
+  "skill": "migrate-spring-to-quarkus",
+  "tests": [
+    {
+      "id": "pos_01",
+      "prompt": "Migrate my Spring Boot application to Quarkus",
+      "should_trigger": true,
+      "category": "canonical"
+    },
+    {
+      "id": "pos_02",
+      "prompt": "Convert this @SpringBootApplication project to use Quarkus instead",
+      "should_trigger": true,
+      "category": "annotation-keyword"
+    },
+    {
+      "id": "pos_03",
+      "prompt": "Port our Spring Boot REST API to Quarkus, keeping Spring compatibility where possible",
+      "should_trigger": true,
+      "category": "strategy-specific"
+    },
+    {
+      "id": "pos_04",
+      "prompt": "I need to replace Spring Data JPA with Panache in my Spring Boot project",
+      "should_trigger": true,
+      "category": "component-specific"
+    },
+    {
+      "id": "pos_05",
+      "prompt": "How do I migrate my pom.xml from Spring Boot starters to Quarkus extensions?",
+      "should_trigger": true,
+      "category": "build-file"
+    },
+    {
+      "id": "pos_06",
+      "prompt": "Migrate Spring MVC controllers and Thymeleaf templates to Quarkus",
+      "should_trigger": true,
+      "category": "frontend-controller"
+    },
+    {
+      "id": "pos_07",
+      "prompt": "Replace Spring with Quarkus in this project",
+      "should_trigger": true,
+      "category": "terse-implicit"
+    },
+    {
+      "id": "pos_08",
+      "prompt": "Our team wants to move from Spring Boot to Quarkus for better native compilation support",
+      "should_trigger": true,
+      "category": "business-motivation"
+    },
+    {
+      "id": "pos_09",
+      "prompt": "I have a Spring Boot Gradle project that needs to be migrated to Quarkus",
+      "should_trigger": true,
+      "category": "gradle-specific"
+    },
+    {
+      "id": "pos_10",
+      "prompt": "Can you help me migrate my Spring Security configuration to Quarkus OIDC?",
+      "should_trigger": true,
+      "category": "security-specific"
+    },
+    {
+      "id": "neg_01",
+      "prompt": "Update my Quarkus project to the latest version",
+      "should_trigger": false,
+      "category": "quarkus-update"
+    },
+    {
+      "id": "neg_02",
+      "prompt": "Create a new Quarkus REST API project from scratch",
+      "should_trigger": false,
+      "category": "new-project"
+    },
+    {
+      "id": "neg_03",
+      "prompt": "Refactor my Java service to use Java records and sealed classes",
+      "should_trigger": false,
+      "category": "general-refactoring"
+    },
+    {
+      "id": "neg_04",
+      "prompt": "Migrate my Jakarta EE WAR application to Quarkus",
+      "should_trigger": false,
+      "category": "non-spring-jakarta-ee"
+    },
+    {
+      "id": "neg_05",
+      "prompt": "Migrate my Spring Boot application to Micronaut",
+      "should_trigger": false,
+      "category": "wrong-target-framework"
+    },
+    {
+      "id": "neg_06",
+      "prompt": "Fix the build error in my Quarkus project: ClassNotFoundException for io.quarkus.arc",
+      "should_trigger": false,
+      "category": "quarkus-debugging"
+    },
+    {
+      "id": "neg_07",
+      "prompt": "Convert my Python Django application to FastAPI",
+      "should_trigger": false,
+      "category": "non-java-ecosystem"
+    },
+    {
+      "id": "neg_08",
+      "prompt": "Upgrade my Spring Boot 2.7 application to Spring Boot 3.2",
+      "should_trigger": false,
+      "category": "spring-to-spring-upgrade"
+    },
+    {
+      "id": "neg_09",
+      "prompt": "Scaffold a Quarkus MCP server with stdio transport",
+      "should_trigger": false,
+      "category": "different-skill"
+    },
+    {
+      "id": "neg_10",
+      "prompt": "How do I add a health check endpoint to my existing Quarkus application?",
+      "should_trigger": false,
+      "category": "general-quarkus-dev"
+    }
+  ]
+}
