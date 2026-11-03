@@ -70,7 +70,7 @@ This ADR includes annotated YAML/JSON examples that serve as the schema for each
 | `<source-name>/migration-metadata/repo-metadata.json` | `discovery` | `planning`, validators |
 | `<source-name>/migration-metadata/dependency-analysis.yaml` | `discovery` | `planning` |
 | `<source-name>/migration-metadata/code-metadata.yaml` | `discovery` / validator CLI | persistence, service, web validators |
-| `<source-name>-quarkus/migration-spec.yaml` | `planning`; appended by all modules | all transformation modules, `reporting` |
+| `<source-name>-quarkus/migration-spec.yaml` | `planning` | all transformation modules, `reporting` |
 | `<source-name>-quarkus/migration-metadata/migration-context.json` | the invoking agent; updated every module | all modules |
 | `<source-name>-quarkus/migration-metadata/code-metadata.yaml` | validator CLI (target copy) | persistence, service, web validators |
 | `<source-name>-quarkus/migration-reports/<module-name>-report.json` | each transformation module | `reporting` |
@@ -369,7 +369,7 @@ schema_version: "1.0"
 
 ### 4. `<source-name>-quarkus/migration-spec.yaml`
 
-**Written by**: `planning` (creates and populates); appended by every transformation module
+**Written by**: `planning` (creates and populates)
 **Read by**: all transformation modules, `reporting`
 
 The binding contract between all modules. `planning` writes the initial structure; transformation modules read it to drive their work. `reporting` reads the full file to produce `migration-summary.md`.
@@ -705,7 +705,7 @@ module table (§3) accurately reflects the current run state.
         (modules may add further files here; names must not collide with the above)
 
 <source-name>-quarkus/
-├── migration-spec.yaml                 §4  written by planning; appended by all modules
+├── migration-spec.yaml                 §4  written by planning
 ├── migration-summary.md                §8  written by reporting
 ├── migration-metadata/
 │   ├── migration-context.json          §5  written by the invoking agent; updated by all
