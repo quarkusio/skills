@@ -14,7 +14,7 @@ Load [references/annotation-map.md](../../references/annotation-map.md) before s
 
 - [ ] Migrate entities (JPA → Panache if full Quarkus strategy)
 - [ ] Migrate repositories (Spring Data → Panache if full Quarkus strategy)
-- [ ] **Validate persistence migration.** Read [references/mtools-mcp.md](../../references/mtools-mcp.md) for the MCP tool definition, then call `sourceValidate` with `validator: "persistence"` and the `<source>` and `<target>` paths. You MUST attempt this call. If the tool is not available, log "mtools MCP not available, skipping automated persistence validation" and proceed. If reachable, address any `[FAIL]` items before moving to the next module.
+- [ ] **Validate persistence migration.** Read [references/mtools-mcp.md](../../references/mtools-mcp.md) for the MCP tool definition, then call `quarkit_validate` with `validator: "persistence"` and the `<source>` and `<target>` paths. You MUST attempt this call. If the tool is not available, log "mtools MCP not available, skipping automated persistence validation" and proceed. If reachable, address any `[FAIL]` items before moving to the next module.
 
 
 ## Entity Layer (Full Quarkus strategy)
@@ -84,10 +84,10 @@ When using the compatibility strategy (`quarkus-spring-data-jpa`), be aware of t
 ## Validation
 
 - **Read the instructions** of the **MCP tools** definition here: [references/mtools-mcp.md](../../references/mtools-mcp.md)
-- **Call** `sourceValidate` tool using arguments as defined part of the MCP Tools definition document
+- **Call** `quarkit_validate` tool using arguments as defined part of the MCP Tools definition document
  - Review rules reported under `[PASS]`, `[FAIL]`, and `[WARN]`.
  - Address any `[FAIL]` items (missing entity migrations, mismatched table/column names, ID strategy discrepancies, relationship mappings).
-- **If `sourceValidate` tool is not available:**
+- **If `quarkit_validate` tool is not available:**
   - Output message: `source is not available. Skipping automated persistence validation.`
   - Proceed without failing the migration.
 
