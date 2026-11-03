@@ -241,10 +241,6 @@ Write `<target>/migration-reports/reporting-report.json`:
 }
 ```
 
-## 5. Update migration-context.json
+## 5. Checkpoint state
 
-If `<target>/migration-metadata/migration-context.json` exists:
-
-- Add `"reporting"` to `completedModules`
-- Set `currentModule` to `null` only if all verification checks passed; otherwise leave it as `"reporting"`
-- Set `moduleReports.reporting` to `"migration-reports/reporting-report.json"`
+Do not record this module in `migration-context.json`. Reporting is not a tracked module: it runs after verification on every invocation (including resumed runs), so it is always regenerated from the current state of `<target>`. Do not hand-edit the context file (see "Resumable Migration" in `SKILL.md`).
