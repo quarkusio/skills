@@ -4,8 +4,8 @@ The `mtools` MCP server is a Quarkus MCP server that exposes the following tools
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
-| `sourceAnalyze` | Scan a project for classes, annotations, interfaces, pom dependencies, and properties | `userQueries` (required), `projectPath` |
-| `sourceValidate` | Validate a migrated Quarkus project against its Spring source | `target` (required), `source` (required), `validator`, `skipCompile`, `parser` |
+| `quarkit_analyze` | Scan a project for classes, annotations, interfaces, pom dependencies, and properties | `query` (required), `project_path` |
+| `quarkit_validate` | Validate a migrated Quarkus project against its Spring source | `target` (required), `source` (required), `validator`, `skipCompile`, `parser` |
 
 ## Verify connectivity
 
@@ -14,16 +14,16 @@ Call `tools/list`:
 - Cannot connect -> "Cannot connect to the mtools MCP server. Make sure it is running." STOP
 - A tool is missing -> report the missing tool name. STOP
 
-## Analyze application (`sourceAnalyze`)
+## Analyze application (`quarkit_analyze`)
 
-Call the `sourceAnalyze` MCP tool to scan a project and list its classes, interfaces, annotations, Maven dependencies, and properties.
+Call the `quarkit_analyze` MCP tool to scan a project and list its classes, interfaces, annotations, Maven dependencies, and properties.
 
 ### Parameters
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|:--------:|---------|-------------|
-| `userQueries` | `string` | **Yes** | — | Semicolon-separated list of query expressions (e.g. `java class all;pom dependency all`). |
-| `projectPath` | `string` | No | `.` | Directory path where the project to analyze is located. |
+| `query` | `string` | **Yes** | — | Semicolon-separated list of query expressions (e.g. `java class all;pom dependency all`). |
+| `project_path` | `string` | No | `.` | Directory path where the project to analyze is located. |
 
 ### Query syntax
 
@@ -45,15 +45,15 @@ Query format: `<fileType> <symbol> <operation>`. The operation must be `all`.
 **Targeted query (current directory):**
 ```json
 {
-  "userQueries": "pom dependency all"
+  "query": "pom dependency all"
 }
 ```
 
 **Full scan with explicit project path:**
 ```json
 {
-  "projectPath": "<path>",
-  "userQueries": "java class all;java interface all;java annotation all;pom dependency all;properties all"
+  "project_path": "<path>",
+  "query": "java class all;java interface all;java annotation all;pom dependency all;properties all"
 }
 ```
 
@@ -73,9 +73,9 @@ Found <X> match(es):
 
 > NOTE: A query without results is reported as "No matches found".
 
-## Validate migration (`sourceValidate`)
+## Validate migration (`quarkit_validate`)
 
-Call the `sourceValidate` MCP tool to check a migrated Quarkus project against the original Spring project.
+Call the `quarkit_validate` MCP tool to check a migrated Quarkus project against the original Spring project.
 
 ### Parameters
 
