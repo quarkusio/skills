@@ -263,6 +263,72 @@ A negative delta means the second skill used fewer resources or ran faster.
 > [!NOTE]
 > Run artifacts in `target/runs/` are **not deleted** between projects or skills within the same `mvn test` invocation. Each run produces its own distinct report file.
 
+## Eval Tests
+
+Eval tests assess the quality of a skill without requiring a full migration run (except `eval-all`, which includes one). 
+They live alongside the migration tests but run under separate Maven profiles.
+
+### Trigger Eval (`-Peval`)
+
+Uses an LLM-as-judge approach to test whether the skill description correctly activates for matching prompts and rejects non-matching ones. 
+Sends 20 classification prompts (10 positive, 10 negative) to an ACP agent and measures accuracy.
+
+```bash
+# Run trigger eval (requires an ACP agent)
+mvn test -Peval -Dai.agent=claude-acp
+
+# Use a specific model as judge
+mvn test -Peval -Dai.agent=claude-acp -Dai.model=claude-sonnet-4-5-20250514
+```
+
+Test cases are defined in `src/test/resources/evals/trigger-tests.json`. 
+Each case has an `id`, `prompt`, `should_trigger` (expected result), and `category` (for diagnosing failure patterns). 
+Results are written to `target/eval-results/trigger-eval-<timestamp>.json`.
+
+The test fails if overall accuracy drops below 80% (configurable via `-Deval.min.accuracy=0.90`).
+
+### Execution Fidelity (`-Peval-fidelity`)
+
+Analyzes session log files from prior migration runs to verify that the agent attempted expected tool calls. 
+This test does **not** launch a migration -- it parses the JSONL session logs in `target/runs/`.
+
+```bash
+# Analyze all session logs in target/runs/
+mvn test -Peval-fidelity
+
+# Point to a specific directory
+mvn test -Peval-fidelity -Deval.session.dir=path/to/runs
+
+# Check a single session log
+mvn test -Peval-fidelity -Deval.session.file=target/runs/spring-jpa-crud_default_full.json
+```
+
+Checks are defined in `src/test/resources/evals/execution-fidelity-tests.json`. 
+Each check specifies:
+- `session_log_pattern` -- glob pattern to match log files (e.g. `*_full.json`)
+- `expected_tools` -- tool names that must appear in the log
+- `min_calls` -- minimum number of times each tool should be called
+- `required` -- when `false`, failures are reported as `[ADVISORY]` without failing the build
+
+### Full Pipeline (`-Peval-all`)
+
+Runs all three test types in sequence: trigger eval, migration, then fidelity analysis on the session logs just produced.
+
+```bash
+# Full pipeline for a specific project
+mvn test -Peval-all \
+  -Dai.agent=claude-acp \
+  -Dai.projects=spring-jpa-crud \
+  -Dai.timeout=600
+```
+
+The three phases execute in order within the Maven `test` phase:
+1. **Trigger Eval** -- skill activates correctly for matching/non-matching prompts?
+2. **Migration** -- runs the full migration against the specified project(s)
+3. **Fidelity Eval** -- analyzes the session logs from step 2
+
+If any phase fails, Maven stops (unless `-Dmaven.test.failure.ignore=true`).
+
 ## Two-directory migration model
 
 The harness uses a **two-directory model** where the source project is read-only and the agent writes the migrated project into a separate target directory:

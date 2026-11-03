@@ -13,3 +13,5 @@ tests/.opencode/
 tests/reports/
 tests/projects/*/source/*-report_*.json
 tests/.venv/
+
+dependency-reduced-pom.xml
