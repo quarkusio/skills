@@ -1,21 +1,20 @@
-# Module: Code
+# Module: Service
 
-Migrate all Java source code from Spring patterns to Quarkus equivalents.
+Migrate Spring services, dependency injection, configuration injection, transactions, scheduling and application bootstrap to Quarkus equivalents.
+
+Scope: `@Service`, `@Component`, `@Autowired`, `@Value`, `@Bean`, `@Configuration`, `@Transactional`, `@Scheduled`, `@Async`, the `@SpringBootApplication` main class, and `CommandLineRunner` / `ApplicationRunner`. Controllers belong to the [rest module](rest.md).
 
 All files to transform are in `<target>` (already copied there by the build module). Do not modify `<source>`.
 
 Read `<target>/migration-spec.yaml` at module start:
 - `decisions.strategy`: `full-quarkus` vs `spring-compat`
 
-Load [references/annotation-map.md](../../references/annotation-map.md) before starting. It contains the complete annotation mapping tables for DI, REST, Data, Security, Cache, Scheduling, and Lifecycle.
+Load [references/annotation-map.md](../../references/annotation-map.md) before starting. Use its Dependency Injection, Scheduling, Security, Cache, Configuration Properties and Application Lifecycle sections.
 
 ## What to do
 
 - [ ] Simplify service layer (remove unnecessary interface+impl)
-- [ ] Migrate controllers/resources (Spring MVC → JAX-RS if full Quarkus strategy)
 - [ ] Migrate DI annotations (`@Autowired` → `@Inject`, `@Component` → `@ApplicationScoped`, etc.)
-- [ ] Migrate `Model.addAttribute()` → Qute `Template.data()` or `@CheckedTemplate`
-- [ ] Migrate `return "redirect:..."` → `Response.seeOther()`
 - [ ] Remove `@SpringBootApplication` main class
 - [ ] Compile: `cd <target> && ./mvnw clean compile -DskipTests` (Maven) or `cd <target> && ./gradlew clean compileJava -x test` (Gradle)
 
@@ -49,56 +48,6 @@ public class TodoService {
 - Interface used for testing/mocking → not needed, `@InjectMock` works on concrete classes
 
 **Spring compat strategy**: `@Service` is supported by `quarkus-spring-di` — no changes needed.
-
-## Controller → Resource (Full Quarkus strategy)
-
-```java
-// BEFORE: Spring MVC
-@Controller
-public class TodoController {
-    @GetMapping("/todos")
-    public String list(Model model) {
-        model.addAttribute("todos", todoService.findAll());
-        return "todos";
-    }
-
-    @PostMapping("/todos")
-    public String create(@ModelAttribute Todo todo) {
-        todoService.save(todo);
-        return "redirect:/todos";
-    }
-}
-
-// AFTER: Quarkus + JAX-RS + Qute
-@Path("/todos")
-@ApplicationScoped
-public class TodoResource {
-    @Inject TodoService todoService;
-
-    @CheckedTemplate
-    public static class Templates {
-        public static native TemplateInstance todos(List<Todo> todos);
-    }
-
-    @GET
-    @Produces(MediaType.TEXT_HTML)
-    public TemplateInstance list() {
-        return Templates.todos(todoService.findAll());
-    }
-
-    @POST
-    @Transactional
-    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    public Response create(@BeanParam Todo todo) {
-        todoService.save(todo);
-        return Response.seeOther(URI.create("/todos")).build();
-    }
-}
-```
-
-**Qute strict data map** — unlike Thymeleaf, Qute throws `TemplateException` if a key referenced in the template is missing from the data map. Every `.data()` call site must provide the **same complete set of keys**, including on empty-result paths.
-
-**Spring compat strategy**: `@RestController` works with `quarkus-spring-web` (but NOT plain `@Controller`).
 
 ## Main Class Removal
 
@@ -234,12 +183,12 @@ public class MyApp implements QuarkusApplication {
 }
 ```
 
+
 ## Watch out
 
 - **Missing `@Transactional`**: Quarkus uses `jakarta.transaction.Transactional`, not Spring's
 - **Bean discovery**: Quarkus uses build-time CDI; beans must have a scope annotation
 - **No component scanning**: Beans in external JARs need a Jandex index or `quarkus.index-dependency`
-- **JAX-RS path conflicts**: Spring allows overlapping `@RequestMapping` paths — JAX-RS does not. Check for duplicate `@Path` values
 
 ## Spring Compat Extension Limitations
 
@@ -248,7 +197,6 @@ When using the compatibility strategy (`quarkus-spring-*` extensions), be aware 
 | Extension | What does NOT work |
 |---|---|
 | `quarkus-spring-di` | `@Primary`, `@Conditional*`, `@Profile`, `@Lazy` not processed. SpEL `#{...}` in `@Value` throws error. `@Bean` must be inside `@Configuration` class. |
-| `quarkus-spring-web` | Only `@RestController` — plain `@Controller` not supported. Only one `@RestControllerAdvice` per app. `@CrossOrigin`, `@InitBinder`, `@ModelAttribute` not supported. No reactive types (`Mono`, `Flux`). |
 | `quarkus-spring-security` | Limited SpEL in `@PreAuthorize`: only `hasRole`, `hasAnyRole`, `permitAll`, `denyAll`, `isAuthenticated`, `@bean.method()`, param comparison. Cannot mix `and`/`or` operators. Cannot combine `@Secured` with `@PreAuthorize`. |
 | `quarkus-spring-cache` | Single cache name only (no arrays). `key`, `condition`, `unless`, `keyGenerator`, `cacheManager` parameters NOT supported. No `@Caching` or `@CacheConfig`. |
 | `quarkus-spring-scheduled` | `fixedDelay` NOT supported (only `fixedRate`). Cannot combine `initialDelay` with `cron`. |
