@@ -135,7 +135,7 @@ across the migration lifecycle:
 - **`discovery`** writes source-app metadata (detected features, entities, services,
   tool configuration).
 - **`planning`** appends strategy decisions and technology mappings.
-- **Transformation modules** (`build`, `code`, `frontend`, `testing`, `cleanup`) append
+- **Transformation modules** (`build`, `service`, `rest`, `frontend`, `testing`, `cleanup`) append
   per-phase ledger entries and verification results as they execute.
 - **`reporting`** reads the full file to produce the final summary.
 

@@ -133,7 +133,8 @@ skills/migrate-spring-to-quarkus/
 │   │   └── gradle.md                 #   Gradle-specific: build.gradle(.kts), plugins
 │   ├── code/
 │   │   ├── persistence.md            #   JPA entities and repositories → Panache
-│   │   ├── code.md                   #   Java code: annotations, DI, REST, Data, Security
+│   │   ├── service.md                #   Services, DI, config, transactions, scheduling, bootstrap
+│   │   ├── rest.md                   #   Spring MVC controllers → JAX-RS resources
 │   │   └── messaging.md              #   Messaging migration: Kafka, RabbitMQ, JMS -> Quarkus
 │   ├── frontend/
 │   │   ├── frontend.md               #   View layer dispatcher & static resources
