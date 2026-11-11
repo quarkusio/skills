@@ -18,9 +18,9 @@ Read `<target>/migration-spec.yaml` at module start:
 
 ## Main class removal
 
-If the main class was already removed during the code module, mark this as done.
+If the main class was already removed during the service module, mark this as done.
 
-Otherwise, follow the instructions in the [code module — Main Class Removal](../code/code.md#main-class-removal).
+Otherwise, follow the instructions in the [service module — Main Class Removal](../code/service.md#main-class-removal).
 
 ## Leftover Spring imports
 
