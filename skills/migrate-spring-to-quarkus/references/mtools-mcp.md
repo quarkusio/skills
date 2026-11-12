@@ -83,7 +83,7 @@ Call the `quarkit_validate` MCP tool to check a migrated Quarkus project against
 |-----------|------|:--------:|---------|-------------|
 | `target` | `string` | **Yes** | — | Directory path of the migrated Quarkus project. |
 | `source` | `string` | **Yes** | — | Directory path of the original Spring project. |
-| `validator` | `string` | No | `all` | Specific validator to run: `project-setup`, `persistence`, or `all`. |
+| `validator` | `string` | No | `all` | Specific validator to run: `project-setup`, `persistence`, `messaging`, or `all`. |
 | `skipCompile` | `string` | No | `"false"` | When `"true"` (case-insensitive), skip `mvn compile` during validation checks. Any other value means compile is not skipped. |
 | `parser` | `string` | No | `"treesitter"` | Parser engine to use for source parsing: `treesitter` or `javaparser`. |
 
@@ -93,6 +93,7 @@ Call the `quarkit_validate` MCP tool to check a migrated Quarkus project against
 |-----------|--------|
 | `project-setup` | `pom.xml` and `src/main/resources/application.properties` exist, no `@SpringBootApplication` / `@EnableAutoConfiguration` / `@SpringBootTest` in Java files, no `org.springframework*` dependencies in `pom.xml`, POM coordinates (`groupId`, `artifactId`, `version`), `quarkus-maven-plugin`, `quarkus-bom` in `dependencyManagement`, standard Maven directories (`src/{main,test}/{java,resources}`), `mvn compile` |
 | `persistence` | Entity count, all entities migrated, table names, ID strategy, fields (type, column), relationships (`mappedBy`, collection type), `mvn compile` |
+| `messaging` | Spring messaging removed (annotations, imports, dependencies, `spring.kafka/rabbitmq/...` properties), broker connector (Kafka → `smallrye-kafka`, RabbitMQ → `smallrye-rabbitmq`, JMS → `smallrye-jms`), destination coverage, `@KafkaListener`/`@RabbitListener`/`@JmsListener` → `@Incoming`, `KafkaTemplate`/`RabbitTemplate`/`JmsTemplate`/`@SendTo` → `@Channel Emitter`/`@Outgoing`, message types, channel configuration, incoming/outgoing name conflicts (`SRMSG00073`), orphaned channels, consumer group ids, `@Blocking`, `mvn compile` |
 | `all` | Run all available validators along with their checks. |
 
 ### Example invocations
@@ -138,6 +139,6 @@ Rules: <total> total | <passed> passed | <failed> failed | <warnings> warnings
 |---|---|---|
 | "Access denied: path traversal ('..')" | `..` in a path argument | Use a path without `..`. |
 | "Access denied: path … is outside the allowed directories" | Path not under `mtool.allowed-dirs` | Tell the user to relaunch with `-Dmtool.allowed-dirs=<dir>` as shown in the message. STOP |
-| "Unknown validator: '…'" / "Error: unknown validator '…'" | Name not discovered (validators are lowercase, e.g. `all`, `persistence`, `project-setup`) | Use one from the list in the message, or `all`. |
+| "Unknown validator: '…'" / "Error: unknown validator '…'" | Name not discovered (validators are lowercase, e.g. `all`, `persistence`, `messaging`, `project-setup`) | Use one from the list in the message, or `all`. |
 | "Error: target/source project path does not exist" | Wrong path | Fix the path to point to the correct directory. |
 | "Error: query must have at least 2 parts" | Malformed query | Fix the query. |
