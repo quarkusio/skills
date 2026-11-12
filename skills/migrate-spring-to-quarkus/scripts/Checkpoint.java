@@ -44,7 +44,7 @@ public class Checkpoint {
 
     /** Canonical module execution order (planning is always first after prerequisite). */
     static final List<String> MODULE_ORDER =
-            List.of("planning", "build", "code", "messaging", "frontend", "testing", "cleanup");
+            List.of("planning", "build", "persistence", "code", "messaging", "frontend", "testing", "cleanup");
 
     static final Set<String> FINGERPRINT_EXCLUDED_TOP_LEVEL =
             Set.of(".git", "target", "build", ".gradle", "migration-metadata");
@@ -300,12 +300,8 @@ public class Checkpoint {
         ctx.put("targetRepo", target.toAbsolutePath().normalize().toString());
         ctx.put("sourceFingerprint", fingerprint(source));
         ctx.put("currentModule", null);
-        ctx.put("approvedModules", new ArrayList<>());
         ctx.put("paths", obj(
-                "migrationSpec", target.resolve("migration-spec.yaml").toString(),
-                "repoMetadata", null,
-                "dependencyAnalysis", null,
-                "codeMetadata", null));
+                "migrationSpec", target.resolve("migration-spec.yaml").toString()));
         Map<String, Object> reports = new LinkedHashMap<>();
         for (String m : MODULE_ORDER) {
             reports.put(m, null);
