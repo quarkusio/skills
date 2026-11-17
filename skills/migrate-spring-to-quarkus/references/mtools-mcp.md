@@ -1,6 +1,6 @@
-# Analyze and Validate Projects via the mtools MCP Server
+# Analyze and Validate Projects via the Quarkit MCP Server
 
-The `mtools` MCP server is a Quarkus MCP server that exposes the following tools:
+The `Quarkit` MCP server is a Quarkus MCP server that exposes the following tools:
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
@@ -11,7 +11,7 @@ The `mtools` MCP server is a Quarkus MCP server that exposes the following tools
 
 Call `tools/list`:
 - Both tools present -> Everything's OK.
-- Cannot connect -> "Cannot connect to the mtools MCP server. Make sure it is running." STOP
+- Cannot connect -> "Cannot connect to the Quarkit MCP server. Make sure it is running." STOP
 - A tool is missing -> report the missing tool name. STOP
 
 ## Analyze application (`quarkit_analyze`)
