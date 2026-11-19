@@ -47,6 +47,7 @@ include it in the migration report.
       (see [references/dependency-map.md](../../references/dependency-map.md))
 - [ ] Remove Spring messaging imports; add MicroProfile Reactive Messaging imports
 - [ ] Run the [Validation checklist](#validation-checklist)
+- [ ] **Validate messaging migration.** Read [references/mtools-mcp.md](../../references/mtools-mcp.md) for the MCP tool definition, then call `quarkit_validate` with `validator: "messaging"` and the `<source>` and `<target>` paths. You MUST attempt this call. If the tool is not available, log "mtools MCP not available, skipping automated messaging validation" and proceed. If reachable, address any `[FAIL]` items before moving to the next module.
 
 ## Broker distinction
 
@@ -417,6 +418,18 @@ After completing all transformations, verify:
 <!-- Useful in future
 - [ ] Messaging-related tests pass where available
 - [ ] Compile: `./mvnw clean compile -DskipTests` passes -->
+
+## Validation
+
+- **Read the instructions** of the **MCP tools** definition here: [references/mtools-mcp.md](../../references/mtools-mcp.md)
+- **Call** `quarkit_validate` tool with `validator: "messaging"` using arguments as defined part of the MCP Tools definition document
+  - Review rules reported under `[PASS]`, `[FAIL]`, and `[WARN]`.
+  - Address any `[FAIL]` items (leftover Spring messaging code/dependencies, missing connector, unmapped listeners or producers, destinations not preserved, missing channel configuration, incoming/outgoing channel name conflicts, orphaned channels).
+  - Review `[WARN]` items (message type changes, missing `group.id`, `@Incoming` methods doing blocking work without `@Blocking`, destinations that could not be resolved statically) and fix them or document the deviation.
+- The automated checks cover these checklist items: Spring annotations/imports/dependencies removed, connector configuration for every channel, `SRMSG00073` name conflicts, destinations preserved, consumer group preserved, `@Blocking`. Serialization, ack mode, retry, dead-letter and transaction boundaries are **not** checked and must be verified manually.
+- **If `quarkit_validate` tool is not available:**
+  - Output message: `mtools MCP is not available. Skipping automated messaging validation.`
+  - Proceed without failing the migration.
 
 ## Watch out
 
