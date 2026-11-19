@@ -108,7 +108,7 @@ The sections below are normative and must appear in this order. Populate each se
 
 - Source: `migration-spec.yaml` fields `source_technology` and `target_technology`
 - Status emoji: checkmark when 100%, construction when partial, cross when failed
-- Completion: ratio of COMPLETED modules to total enabled modules; split backend (build, code, testing, cleanup) and frontend
+- Completion: ratio of COMPLETED modules to total enabled modules; split backend (build, service, rest, testing, cleanup) and frontend
 
 ### §2 -- Executive Summary
 

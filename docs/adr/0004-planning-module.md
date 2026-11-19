@@ -148,7 +148,7 @@ The table below documents the intended contract between the planning module and 
 |---|---|---|
 | `modules/jdk/jdk.md` | Pass 1: resolves absolute minimum JDK from argument / `.quarkus-migration.yml` / default (17); runs before spec exists | Existing |
 | `modules/build/` | `target_technology.quarkus_version`, `target_technology.java_version` — writes to `pom.xml` / `build.gradle` | Existing |
-| `modules/code/code.md` | `decisions.strategy`, `decisions.persistence` — branches between strategies | Existing |
+| `modules/code/service.md`, `modules/code/rest.md` | `decisions.strategy`, `decisions.persistence` — branches between strategies (the former `modules/code/code.md`, split per [ADR-0005](0005-split-code-module-into-service-and-rest.md)) | Existing |
 | `modules/code/messaging.md` | `decisions.messaging_transport` — targets the correct Quarkus connector | Existing |
 | `modules/frontend/frontend.md` | `decisions.view_layer` — chooses Qute vs. MyFaces vs. FreeMarker path | Existing |
 | `modules/testing/testing.md` | `decisions.strategy` — adjusts test annotation replacement approach | Existing |

@@ -32,7 +32,7 @@ Load the relevant reference file when working on a module:
 | Reference | Use during |
 |---|---|
 | [references/dependency-map.md](references/dependency-map.md) | Build module: dependency and plugin mapping |
-| [references/annotation-map.md](references/annotation-map.md) | Code module: annotation, DI, REST, Data, Security migration |
+| [references/annotation-map.md](references/annotation-map.md) | Service and REST modules: annotation, DI, REST, Data, Security migration |
 | [references/config-map.md](references/config-map.md) | Build module: configuration property migration |
 
 
@@ -55,7 +55,8 @@ Load the relevant reference file when working on a module:
 | [planning](modules/planning/planning.md)      | Prerequisite check passed                                                                                                 | **ALWAYS** — generates `<target>/migration-spec.yaml`                                    |
 | [build](modules/build/build.md)               | Spring Boot parent/starters/`spring-boot-maven-plugin` in `pom.xml`, or Spring Boot/`io.spring.dependency-management` plugins in `build.gradle(.kts)` | **PASS** if Spring Boot build markers found; **SKIP** otherwise                          |
 | [persistence](modules/code/persistence.md)    | `@Entity`, `JpaRepository`, `CrudRepository`, or `@Repository` in Java sources                                            | **PASS** if JPA/persistence annotations found; **SKIP** otherwise                        |
-| [code](modules/code/code.md)                  | Spring annotations in Java sources (`@Component`, `@Service`, `@Controller`, `@Autowired`, etc.) | **PASS** if Spring annotations found; **SKIP** otherwise                                 |
+| [service](modules/code/service.md)            | `@Service`, `@Component`, `@Autowired`, `@Configuration`, `@Bean`, `@Scheduled`, `@Async`, `@Transactional`, `@Value`, `CommandLineRunner`, `ApplicationRunner`, or `@SpringBootApplication` in Java sources | **PASS** if any found; **SKIP** otherwise |
+| [rest](modules/code/rest.md)                  | `@Controller`, `@RestController`, `@RequestMapping`, `@GetMapping`, `@PostMapping`, `@PutMapping`, or `@DeleteMapping` in Java sources | **PASS** if any found; **SKIP** otherwise |
 | [messaging](modules/code/messaging.md)        | `@KafkaListener`, `@RabbitListener`, `@JmsListener`, `@SendTo`, `@EnableKafka`, `@EnableRabbit`, `KafkaTemplate`, `RabbitTemplate`, or `JmsTemplate` in Java sources | **PASS** if any found; **SKIP** otherwise                                                |
 | [frontend](modules/frontend/frontend.md)      | Thymeleaf/JSP templates in `templates/` or `webapp/`, static resources in `static/`, JSF XHTML files in `webapp/` or `META-INF/resources/`, FreeMarker templates (`.ftl`, `.ftlh`, `.ftlx`), `freemarker.*` imports, or `FreeMarkerConfigurer` bean | **PASS** if view layer found; **SKIP** otherwise                                         |
 | [testing](modules/testing/testing.md)         | Spring test annotations in test sources (`@SpringBootTest`, `@WebMvcTest`, `@MockBean`)                                   | **PASS** if Spring tests found; **SKIP** otherwise                                       |
@@ -73,7 +74,7 @@ STEP 0 — PREREQUISITE GATE (mandatory, runs before everything else)
        → log "Prerequisite gate: PASS — proceeding with migration"
        → continue to the module loop below
 
-FOR module IN [planning, build, persistence, code, messaging, frontend, testing, cleanup]:
+FOR module IN [planning, build, persistence, service, rest, messaging, frontend, testing, cleanup]:
 
   1. EVALUATE — inspect <source> for the gate condition
   2. DECIDE
@@ -145,7 +146,7 @@ Then present the review as a structured report:
 - Strategy: [Full Migration / Spring Compatibility]
 - Agent: [AI agent name - e.g claude, pi, opencode, gemini, etc]
 - Model: [model name — e.g. claude-sonnet-4-6, check system context]
-- Modules completed: [X/9]
+- Modules completed: [X/10]
 - Checks passed: [X/6]
 - Token usage: [input tokens / output tokens — check session stats]
 - Estimated cost: [~$X.XX — token counts × per-model pricing from anthropic.com/pricing]
@@ -154,7 +155,8 @@ Then present the review as a structured report:
 | Module | Files changed | Key changes |
 |--------|--------------|-------------|
 | build | pom.xml or build.gradle(.kts), application.properties | ... |
-| code | ... | ... |
+| service | ... | ... |
+| rest | ... | ... |
 | frontend | ... | ... |
 | testing | ... | ... |
 
