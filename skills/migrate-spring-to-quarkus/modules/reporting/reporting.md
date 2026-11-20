@@ -82,7 +82,8 @@ If token usage or cost data is unavailable, set the values to `null` and add a n
 Collect all available data for the report:
 
 - [ ] `<target>/migration-spec.yaml` -- strategy, detected features, entities, services, repositories, controllers, decisions, unresolved issues
-- [ ] `<target>/migration-metadata/migration-context.json` -- completed modules, timestamps, paths
+- [ ] `<target>/migration-metadata/migration-context.json` -- `modules.<name>` (status, gate, timestamps), `lastCheckpointAt`, `moduleReports`, `paths.migrationSpec`
+- [ ] `java <skill>/scripts/Checkpoint.java status <target>` -- `completedModules` and `skippedModules` (derived at read time; not stored in the context file)
 - [ ] `<target>/migration-reports/*-report.json` -- per-module results (list directory, read each file)
 - [ ] `<target>/migration-metadata/testlogs.txt` -- test output (if exists)
 
@@ -241,10 +242,6 @@ Write `<target>/migration-reports/reporting-report.json`:
 }
 ```
 
-## 5. Update migration-context.json
+## 5. Checkpoint state
 
-If `<target>/migration-metadata/migration-context.json` exists:
-
-- Add `"reporting"` to `completedModules`
-- Set `currentModule` to `null` only if all verification checks passed; otherwise leave it as `"reporting"`
-- Set `moduleReports.reporting` to `"migration-reports/reporting-report.json"`
+Do not record this module in `migration-context.json`. Reporting is not a tracked module: it runs after verification on every invocation (including resumed runs), so it is always regenerated from the current state of `<target>`. Do not hand-edit the context file (see "Resumable Migration" in `SKILL.md`).
