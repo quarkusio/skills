@@ -82,7 +82,8 @@ If token usage or cost data is unavailable, set the values to `null` and add a n
 Collect all available data for the report:
 
 - [ ] `<target>/migration-spec.yaml` -- strategy, detected features, entities, services, repositories, controllers, decisions, unresolved issues
-- [ ] `<target>/migration-metadata/migration-context.json` -- completed modules, timestamps, paths
+- [ ] `<target>/migration-metadata/migration-context.json` -- `modules.<name>` (status, gate, timestamps), `lastCheckpointAt`, `moduleReports`, `paths.migrationSpec`
+- [ ] `java <skill>/scripts/Checkpoint.java status <target>` -- `completedModules` and `skippedModules` (derived at read time; not stored in the context file)
 - [ ] `<target>/migration-reports/*-report.json` -- per-module results (list directory, read each file)
 - [ ] `<target>/migration-metadata/testlogs.txt` -- test output (if exists)
 
