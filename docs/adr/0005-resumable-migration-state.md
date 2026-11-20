@@ -67,6 +67,8 @@ checkpoint logic.
 ### Schema additions to `migration-context.json`
 
 Extends ADR-0003 §5. All additions are optional-with-default, so this is not a breaking change.
+Note that the ADR-0003 §5 example is no longer the full schema: `completedModules`, `approvedModules`,
+and `paths.*` (except `migrationSpec`) are no longer written. `completedModules` / `skippedModules` are derived by `status` (see Command interface).
 
 ```jsonc
 {
@@ -95,7 +97,7 @@ Extends ADR-0003 §5. All additions are optional-with-default, so this is not a 
 }
 ```
 
-Tracked modules (`MODULE_ORDER`): `planning, build, code, persistence, messaging, frontend, testing, cleanup`. List will be extended as new modules are added.
+Tracked modules (`MODULE_ORDER`): `planning, build, persistence, code, messaging, frontend, testing, cleanup`. List will be extended as new modules are added.
 `prerequisite`, verification, and `reporting` are not tracked because they re-run every time.
 
 ### Command interface
