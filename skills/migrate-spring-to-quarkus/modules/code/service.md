@@ -9,12 +9,13 @@ All files to transform are in `<target>` (already copied there by the build modu
 Read `<target>/migration-spec.yaml` at module start:
 - `decisions.strategy`: `full-quarkus` vs `spring-compat`
 
-Load [references/annotation-map.md](../../references/annotation-map.md) before starting. Use its Dependency Injection, Scheduling, Security, Cache, Configuration Properties and Application Lifecycle sections.
+Load [references/annotation-map.md](../../references/annotation-map.md) before starting. Use its Dependency Injection, Scheduling, Security, Cache, Configuration Properties and Application Lifecycle sections, plus the `@Transactional` rows and notes in its Data / JPA section.
 
 ## What to do
 
 - [ ] Simplify service layer (remove unnecessary interface+impl)
 - [ ] Migrate DI annotations (`@Autowired` → `@Inject`, `@Component` → `@ApplicationScoped`, etc.)
+- [ ] Migrate `@Transactional` according to the strategy (see [Transactions](#transactions))
 - [ ] Remove `@SpringBootApplication` main class
 - [ ] Compile: `cd <target> && ./mvnw clean compile -DskipTests` (Maven) or `cd <target> && ./gradlew clean compileJava -x test` (Gradle)
 
@@ -184,9 +185,46 @@ public class MyApp implements QuarkusApplication {
 ```
 
 
+## Transactions
+
+Look for `org.springframework.transaction.annotation.Transactional` (class or method level) and check which attributes are used.
+
+**Full Quarkus strategy** — replace with `jakarta.transaction.Transactional` and adapt the attributes. Make sure `quarkus-narayana-jta` is present (normally pulled in by Hibernate ORM).
+
+```java
+// BEFORE: Spring
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = IOException.class, timeout = 30)
+public void archive(Todo todo) { ... }
+
+// AFTER: Quarkus
+import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
+import jakarta.transaction.Transactional;
+import jakarta.transaction.Transactional.TxType;
+
+@Transactional(value = TxType.REQUIRES_NEW, rollbackOn = IOException.class)
+@TransactionConfiguration(timeout = 30)
+public void archive(Todo todo) { ... }
+```
+
+| Spring attribute | Quarkus equivalent |
+|---|---|
+| `propagation` | `value = TxType.*` (`REQUIRED`, `REQUIRES_NEW`, `SUPPORTS`, `MANDATORY`, `NOT_SUPPORTED`, `NEVER`) |
+| `rollbackFor` / `noRollbackFor` | `rollbackOn` / `dontRollbackOn` |
+| `timeout` | `@TransactionConfiguration(timeout = <seconds>)` — only on the method that starts the transaction (or the class); on a method called inside an existing transaction it throws |
+| `readOnly` | No equivalent — drop it |
+| `propagation = NESTED` | No equivalent — redesign (e.g. `REQUIRES_NEW` if the inner work may commit independently) and note it in the migration summary |
+
+**Spring compat strategy** — add `quarkus-spring-tx` and keep Spring's `@Transactional` unchanged. Check the attributes against its limitations (see the table below):
+- `propagation = NESTED` fails the build — replace it as above
+- `readOnly` and `timeout` compile but are ignored at runtime (Quarkus only logs a warning) — flag each use in the migration summary as a behavioral difference
+- `isolation` (other than `DEFAULT`), `value` / `transactionManager` and `label` are also unsupported and ignored with a warning
+
 ## Watch out
 
-- **Missing `@Transactional`**: Quarkus uses `jakarta.transaction.Transactional`, not Spring's
+- **Missing `@Transactional`**: Quarkus uses `jakarta.transaction.Transactional`, not Spring's — see [Transactions](#transactions)
 - **Bean discovery**: Quarkus uses build-time CDI; beans must have a scope annotation
 - **No component scanning**: Beans in external JARs need a Jandex index or `quarkus.index-dependency`
 
@@ -200,3 +238,4 @@ When using the compatibility strategy (`quarkus-spring-*` extensions), be aware 
 | `quarkus-spring-security` | Limited SpEL in `@PreAuthorize`: only `hasRole`, `hasAnyRole`, `permitAll`, `denyAll`, `isAuthenticated`, `@bean.method()`, param comparison. Cannot mix `and`/`or` operators. Cannot combine `@Secured` with `@PreAuthorize`. |
 | `quarkus-spring-cache` | Single cache name only (no arrays). `key`, `condition`, `unless`, `keyGenerator`, `cacheManager` parameters NOT supported. No `@Caching` or `@CacheConfig`. |
 | `quarkus-spring-scheduled` | `fixedDelay` NOT supported (only `fixedRate`). Cannot combine `initialDelay` with `cron`. |
+| `quarkus-spring-tx` | `propagation = NESTED` causes a build-time error. `readOnly`, `timeout`, non-default `isolation`, `value`/`transactionManager` and `label` are ignored with a warning. |
