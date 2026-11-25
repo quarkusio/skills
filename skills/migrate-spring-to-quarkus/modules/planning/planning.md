@@ -263,3 +263,19 @@ metadata:
   complexity: "low|medium|high"
   generatedAt: "<actual current timestamp in ISO-8601 format, e.g. 2026-09-28T11:00:00Z>"
 ```
+
+---
+
+### Step 5: Initialise Checkpoint State
+
+After `migration-spec.yaml` is written, create the resumable-state file with the checkpoint program (see "Resumable Migration" in `SKILL.md`). Do not write `migration-context.json` by hand.
+
+```bash
+java <skill>/scripts/Checkpoint.java init <target> <source>
+java <skill>/scripts/Checkpoint.java complete <target> planning completed --gate ALWAYS --reason "planning always runs" --compile NOT_RUN
+```
+
+Planning writes no per-module report, so `--report` is omitted. `init` does not read the spec, but run it after Step 4 so the resumable state starts only once planning has produced its output.
+
+- `init` fails with `ERROR` if the file already exists. That only happens on a resumed run where `planning` is pending again: skip `init` and run only `complete`.
+- On a resumed run where `planning` re-runs, reuse the existing `<target>` without the Step 0 overwrite prompt, and reuse any `decisions.*` already present in the existing `migration-spec.yaml`.
