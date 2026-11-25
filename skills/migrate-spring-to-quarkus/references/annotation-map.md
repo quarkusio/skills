@@ -84,9 +84,10 @@
 **Compat `@Transactional` notes (`quarkus-spring-tx`):**
 - Add `quarkus-spring-tx` dependency to keep `org.springframework.transaction.annotation.Transactional` working without code changes
 - `propagation` attribute: all values except `NESTED` are supported (`REQUIRED` default, `REQUIRES_NEW`, `SUPPORTS`, `MANDATORY`, `NOT_SUPPORTED`, `NEVER`). `NESTED` causes a build-time error
-- `readOnly` attribute: unsupported — silently ignored at runtime. Flag in migration summary as a behavioral difference
+- `readOnly` attribute: unsupported — ignored with a warning. Flag in migration summary as a behavioral difference
 - `rollbackFor` / `noRollbackFor`: supported
-- `timeout` / `timeoutString`: unsupported — silently ignored at runtime. Flag in migration summary as a behavioral difference
+- `timeout` / `timeoutString`: unsupported — ignored with a warning. Flag in migration summary as a behavioral difference
+- `isolation` (only `DEFAULT` accepted), `value` / `transactionManager` and `label`: unsupported — ignored with a warning
 - Without `quarkus-spring-tx` (full migration): replace import with `jakarta.transaction.Transactional` and adapt attributes manually (e.g., `propagation = SUPPORTS` → `@Transactional(TxType.SUPPORTS)`, drop `readOnly`)
 
 **Compat Spring Data JPA notes:**

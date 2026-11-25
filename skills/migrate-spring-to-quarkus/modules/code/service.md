@@ -44,7 +44,7 @@ public class TodoService {
 ```
 
 **Decision guide:**
-- Service only delegates to repository → eliminate it, inject repository directly in the resource
+- Service only delegates to repository → eliminate it, inject repository directly in the resource. Writes then happen in the resource method, so annotate it with `jakarta.transaction.Transactional` (see [Transactions](#transactions))
 - Service has real business logic → keep as `@ApplicationScoped`, remove the interface
 - Interface used for testing/mocking → not needed, `@InjectMock` works on concrete classes
 

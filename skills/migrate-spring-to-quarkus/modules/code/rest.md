@@ -57,7 +57,6 @@ public class TodoResource {
     }
 
     @POST
-    @Transactional
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     public Response create(@BeanParam Todo todo) {
         todoService.save(todo);
@@ -73,6 +72,7 @@ public class TodoResource {
 ## Watch out
 
 - **JAX-RS path conflicts**: Spring allows overlapping `@RequestMapping` paths — JAX-RS does not. Check for duplicate `@Path` values
+- **Transactions**: keep `@Transactional` out of resource methods when a service performs the write. If the service was eliminated and the resource writes through a repository, annotate that resource method with `jakarta.transaction.Transactional` — see [Transactions](service.md#transactions)
 
 ## Spring Compat Extension Limitations
 

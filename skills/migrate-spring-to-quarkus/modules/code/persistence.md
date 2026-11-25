@@ -93,6 +93,6 @@ When using the compatibility strategy (`quarkus-spring-data-jpa`), be aware of t
 
 ## Watch out
 
-- **Missing `@Transactional`**: Quarkus uses `jakarta.transaction.Transactional`, not Spring's. Any write operation outside a resource method must be annotated explicitly
+- **Missing `@Transactional`**: Quarkus uses `jakarta.transaction.Transactional`, not Spring's, and every write needs a transaction — migration of the annotation is covered in the [service module](service.md#transactions)
 - **No OSIV**: Quarkus doesn't have Open Session in View; lazy loading outside transactions will fail — initialize associations eagerly or use `@Transactional` on the calling method
 - **No component scanning**: Beans in external JARs need a Jandex index or `quarkus.index-dependency`
