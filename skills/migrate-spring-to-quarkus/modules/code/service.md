@@ -213,7 +213,7 @@ public void archive(Todo todo) { ... }
 |---|---|
 | `propagation` | `value = TxType.*` (`REQUIRED`, `REQUIRES_NEW`, `SUPPORTS`, `MANDATORY`, `NOT_SUPPORTED`, `NEVER`) |
 | `rollbackFor` / `noRollbackFor` | `rollbackOn` / `dontRollbackOn` |
-| `timeout` | `@TransactionConfiguration(timeout = <seconds>)` — only on the method that starts the transaction (or the class); on a method called inside an existing transaction it throws |
+| `timeout` | `@TransactionConfiguration(timeout = <seconds>)` — only on the method that starts the transaction; on a method called inside an existing transaction it throws |
 | `readOnly` | No equivalent — drop it |
 | `propagation = NESTED` | No equivalent — redesign (e.g. `REQUIRES_NEW` if the inner work may commit independently) and note it in the migration summary |
 
