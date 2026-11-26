@@ -35,6 +35,8 @@
         <ai.enabled></ai.enabled>
         <ai.prompt></ai.prompt>
         <ai.args></ai.args>
+        <eval.session.dir>target/runs</eval.session.dir>
+        <eval.session.file></eval.session.file>
         <runs>1</runs>
         <runChecks>true</runChecks>
         <ai.review>false</ai.review>
@@ -144,6 +146,8 @@
                 <configuration>
                     <excludes>
                         <exclude>**/MigrationTest.java</exclude>
+                        <exclude>**/TriggerEvalTest.java</exclude>
+                        <exclude>**/ExecutionFidelityTest.java</exclude>
                     </excludes>
                 </configuration>
             </plugin>
@@ -184,6 +188,139 @@
                             <!-- Long-running tests -->
                             <forkedProcessTimeoutInSeconds>3600</forkedProcessTimeoutInSeconds>
                         </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>eval</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${surefire-plugin.version}</version>
+                        <configuration>
+                            <excludes combine.self="override"/>
+                            <redirectTestOutputToFile>false</redirectTestOutputToFile>
+                            <useFile>false</useFile>
+                            <includes>
+                                <include>**/TriggerEvalTest.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <ai.agent>${ai.agent}</ai.agent>
+                                <ai.model>${ai.model}</ai.model>
+                            </systemPropertyVariables>
+                            <forkedProcessTimeoutInSeconds>600</forkedProcessTimeoutInSeconds>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>eval-fidelity</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${surefire-plugin.version}</version>
+                        <configuration>
+                            <excludes combine.self="override"/>
+                            <redirectTestOutputToFile>false</redirectTestOutputToFile>
+                            <useFile>false</useFile>
+                            <includes>
+                                <include>**/ExecutionFidelityTest.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <eval.session.dir>${eval.session.dir}</eval.session.dir>
+                                <eval.session.file>${eval.session.file}</eval.session.file>
+                            </systemPropertyVariables>
+                            <forkedProcessTimeoutInSeconds>120</forkedProcessTimeoutInSeconds>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>eval-all</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${surefire-plugin.version}</version>
+                        <!-- Disable default execution so only our named executions run -->
+                        <executions>
+                            <execution>
+                                <id>default-test</id>
+                                <configuration>
+                                    <skip>true</skip>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>1-trigger-eval</id>
+                                <phase>test</phase>
+                                <goals><goal>test</goal></goals>
+                                <configuration>
+                                    <excludes combine.self="override"/>
+                                    <redirectTestOutputToFile>false</redirectTestOutputToFile>
+                                    <useFile>false</useFile>
+                                    <includes>
+                                        <include>**/TriggerEvalTest.java</include>
+                                    </includes>
+                                    <systemPropertyVariables>
+                                        <ai.agent>${ai.agent}</ai.agent>
+                                        <ai.model>${ai.model}</ai.model>
+                                    </systemPropertyVariables>
+                                    <forkedProcessTimeoutInSeconds>600</forkedProcessTimeoutInSeconds>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>2-migration</id>
+                                <phase>test</phase>
+                                <goals><goal>test</goal></goals>
+                                <configuration>
+                                    <excludes combine.self="override"/>
+                                    <redirectTestOutputToFile>false</redirectTestOutputToFile>
+                                    <useFile>false</useFile>
+                                    <includes>
+                                        <include>**/MigrationTest.java</include>
+                                    </includes>
+                                    <systemPropertyVariables>
+                                        <ai.provider>${ai.provider}</ai.provider>
+                                        <ai.model>${ai.model}</ai.model>
+                                        <ai.strategy>${ai.strategy}</ai.strategy>
+                                        <ai.timeout>${ai.timeout}</ai.timeout>
+                                        <ai.agent>${ai.agent}</ai.agent>
+                                        <ai.projects>${ai.projects}</ai.projects>
+                                        <ai.skills>${ai.skills}</ai.skills>
+                                        <runs>${runs}</runs>
+                                        <runChecks>${runChecks}</runChecks>
+                                        <ai.review>${ai.review}</ai.review>
+                                        <ai.enabled>${ai.enabled}</ai.enabled>
+                                        <ai.prompt>${ai.prompt}</ai.prompt>
+                                        <ai.args>${ai.args}</ai.args>
+                                    </systemPropertyVariables>
+                                    <forkedProcessTimeoutInSeconds>3600</forkedProcessTimeoutInSeconds>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>3-fidelity-eval</id>
+                                <phase>test</phase>
+                                <goals><goal>test</goal></goals>
+                                <configuration>
+                                    <excludes combine.self="override"/>
+                                    <redirectTestOutputToFile>false</redirectTestOutputToFile>
+                                    <useFile>false</useFile>
+                                    <includes>
+                                        <include>**/ExecutionFidelityTest.java</include>
+                                    </includes>
+                                    <systemPropertyVariables>
+                                        <eval.session.dir>${eval.session.dir}</eval.session.dir>
+                                        <eval.session.file>${eval.session.file}</eval.session.file>
+                                    </systemPropertyVariables>
+                                    <forkedProcessTimeoutInSeconds>120</forkedProcessTimeoutInSeconds>
+                                </configuration>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
