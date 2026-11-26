@@ -1,21 +1,21 @@
-# Module: Code
+# Module: Service
 
-Migrate all Java source code from Spring patterns to Quarkus equivalents.
+Migrate Spring services, dependency injection, configuration injection, transactions, scheduling and application bootstrap to Quarkus equivalents.
+
+Scope: `@Service`, `@Component`, `@Autowired`, `@Value`, `@Bean`, `@Configuration`, `@Transactional`, `@Scheduled`, `@Async`, the `@SpringBootApplication` main class, and `CommandLineRunner` / `ApplicationRunner`. Controllers belong to the [rest module](rest.md).
 
 All files to transform are in `<target>` (already copied there by the build module). Do not modify `<source>`.
 
 Read `<target>/migration-spec.yaml` at module start:
 - `decisions.strategy`: `full-quarkus` vs `spring-compat`
 
-Load [references/annotation-map.md](../../references/annotation-map.md) before starting. It contains the complete annotation mapping tables for DI, REST, Data, Security, Cache, Scheduling, and Lifecycle.
+Load [references/annotation-map.md](../../references/annotation-map.md) before starting. Use its Dependency Injection, Scheduling, Security, Cache, Configuration Properties and Application Lifecycle sections, plus the `@Transactional` rows and notes in its Data / JPA section.
 
 ## What to do
 
 - [ ] Simplify service layer (remove unnecessary interface+impl)
-- [ ] Migrate controllers/resources (Spring MVC → JAX-RS if full Quarkus strategy)
 - [ ] Migrate DI annotations (`@Autowired` → `@Inject`, `@Component` → `@ApplicationScoped`, etc.)
-- [ ] Migrate `Model.addAttribute()` → Qute `Template.data()` or `@CheckedTemplate`
-- [ ] Migrate `return "redirect:..."` → `Response.seeOther()`
+- [ ] Migrate `@Transactional` according to the strategy (see [Transactions](#transactions))
 - [ ] Remove `@SpringBootApplication` main class
 - [ ] Compile: `cd <target> && ./mvnw clean compile -DskipTests` (Maven) or `cd <target> && ./gradlew clean compileJava -x test` (Gradle)
 
@@ -44,61 +44,11 @@ public class TodoService {
 ```
 
 **Decision guide:**
-- Service only delegates to repository → eliminate it, inject repository directly in the resource
+- Service only delegates to repository → eliminate it, inject repository directly in the resource. Writes then happen in the resource method, so annotate it with `jakarta.transaction.Transactional` (see [Transactions](#transactions))
 - Service has real business logic → keep as `@ApplicationScoped`, remove the interface
 - Interface used for testing/mocking → not needed, `@InjectMock` works on concrete classes
 
 **Spring compat strategy**: `@Service` is supported by `quarkus-spring-di` — no changes needed.
-
-## Controller → Resource (Full Quarkus strategy)
-
-```java
-// BEFORE: Spring MVC
-@Controller
-public class TodoController {
-    @GetMapping("/todos")
-    public String list(Model model) {
-        model.addAttribute("todos", todoService.findAll());
-        return "todos";
-    }
-
-    @PostMapping("/todos")
-    public String create(@ModelAttribute Todo todo) {
-        todoService.save(todo);
-        return "redirect:/todos";
-    }
-}
-
-// AFTER: Quarkus + JAX-RS + Qute
-@Path("/todos")
-@ApplicationScoped
-public class TodoResource {
-    @Inject TodoService todoService;
-
-    @CheckedTemplate
-    public static class Templates {
-        public static native TemplateInstance todos(List<Todo> todos);
-    }
-
-    @GET
-    @Produces(MediaType.TEXT_HTML)
-    public TemplateInstance list() {
-        return Templates.todos(todoService.findAll());
-    }
-
-    @POST
-    @Transactional
-    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    public Response create(@BeanParam Todo todo) {
-        todoService.save(todo);
-        return Response.seeOther(URI.create("/todos")).build();
-    }
-}
-```
-
-**Qute strict data map** — unlike Thymeleaf, Qute throws `TemplateException` if a key referenced in the template is missing from the data map. Every `.data()` call site must provide the **same complete set of keys**, including on empty-result paths.
-
-**Spring compat strategy**: `@RestController` works with `quarkus-spring-web` (but NOT plain `@Controller`).
 
 ## Main Class Removal
 
@@ -234,12 +184,49 @@ public class MyApp implements QuarkusApplication {
 }
 ```
 
+
+## Transactions
+
+Look for `org.springframework.transaction.annotation.Transactional` (class or method level) and check which attributes are used.
+
+**Full Quarkus strategy** — replace with `jakarta.transaction.Transactional` and adapt the attributes. Make sure `quarkus-narayana-jta` is present (normally pulled in by Hibernate ORM).
+
+```java
+// BEFORE: Spring
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = IOException.class, timeout = 30)
+public void archive(Todo todo) { ... }
+
+// AFTER: Quarkus
+import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
+import jakarta.transaction.Transactional;
+import jakarta.transaction.Transactional.TxType;
+
+@Transactional(value = TxType.REQUIRES_NEW, rollbackOn = IOException.class)
+@TransactionConfiguration(timeout = 30)
+public void archive(Todo todo) { ... }
+```
+
+| Spring attribute | Quarkus equivalent |
+|---|---|
+| `propagation` | `value = TxType.*` (`REQUIRED`, `REQUIRES_NEW`, `SUPPORTS`, `MANDATORY`, `NOT_SUPPORTED`, `NEVER`) |
+| `rollbackFor` / `noRollbackFor` | `rollbackOn` / `dontRollbackOn` |
+| `timeout` | `@TransactionConfiguration(timeout = <seconds>)` — only on the method that starts the transaction; on a method called inside an existing transaction it throws |
+| `readOnly` | No equivalent — drop it |
+| `propagation = NESTED` | No equivalent — redesign (e.g. `REQUIRES_NEW` if the inner work may commit independently) and note it in the migration summary |
+
+**Spring compat strategy** — add `quarkus-spring-tx` and keep Spring's `@Transactional` unchanged. Check the attributes against its limitations (see the table below):
+- `propagation = NESTED` fails the build — replace it as above
+- `readOnly` and `timeout` compile but are ignored at runtime (Quarkus only logs a warning) — flag each use in the migration summary as a behavioral difference
+- `isolation` (other than `DEFAULT`), `value` / `transactionManager` and `label` are also unsupported and ignored with a warning
+
 ## Watch out
 
-- **Missing `@Transactional`**: Quarkus uses `jakarta.transaction.Transactional`, not Spring's
+- **Missing `@Transactional`**: Quarkus uses `jakarta.transaction.Transactional`, not Spring's — see [Transactions](#transactions)
 - **Bean discovery**: Quarkus uses build-time CDI; beans must have a scope annotation
 - **No component scanning**: Beans in external JARs need a Jandex index or `quarkus.index-dependency`
-- **JAX-RS path conflicts**: Spring allows overlapping `@RequestMapping` paths — JAX-RS does not. Check for duplicate `@Path` values
 
 ## Spring Compat Extension Limitations
 
@@ -248,7 +235,7 @@ When using the compatibility strategy (`quarkus-spring-*` extensions), be aware 
 | Extension | What does NOT work |
 |---|---|
 | `quarkus-spring-di` | `@Primary`, `@Conditional*`, `@Profile`, `@Lazy` not processed. SpEL `#{...}` in `@Value` throws error. `@Bean` must be inside `@Configuration` class. |
-| `quarkus-spring-web` | Only `@RestController` — plain `@Controller` not supported. Only one `@RestControllerAdvice` per app. `@CrossOrigin`, `@InitBinder`, `@ModelAttribute` not supported. No reactive types (`Mono`, `Flux`). |
 | `quarkus-spring-security` | Limited SpEL in `@PreAuthorize`: only `hasRole`, `hasAnyRole`, `permitAll`, `denyAll`, `isAuthenticated`, `@bean.method()`, param comparison. Cannot mix `and`/`or` operators. Cannot combine `@Secured` with `@PreAuthorize`. |
 | `quarkus-spring-cache` | Single cache name only (no arrays). `key`, `condition`, `unless`, `keyGenerator`, `cacheManager` parameters NOT supported. No `@Caching` or `@CacheConfig`. |
 | `quarkus-spring-scheduled` | `fixedDelay` NOT supported (only `fixedRate`). Cannot combine `initialDelay` with `cron`. |
+| `quarkus-spring-tx` | `propagation = NESTED` causes a build-time error. `readOnly`, `timeout`, non-default `isolation`, `value`/`transactionManager` and `label` are ignored with a warning. |
