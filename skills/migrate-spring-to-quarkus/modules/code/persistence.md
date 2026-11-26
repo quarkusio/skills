@@ -8,14 +8,21 @@ Read `<target>/migration-spec.yaml` at module start:
 - `decisions.strategy`: `full-quarkus` vs `spring-compat`
 - `decisions.persistence`: `panache-active-record` vs `panache-repository` vs `hibernate-orm`
 
-Load [references/annotation-map.md](../../references/annotation-map.md) before starting. See the Data section for the full JPA/Panache annotation mapping.
+<!-- Load [references/annotation-map.md](../../references/annotation-map.md) before starting. See the Data section for the full JPA/Panache annotation mapping. -->
 
 ## What to do
 
+- [ ] Migrate Java annotations according to the list of references that you got using the MCP Tool. See instructions under [MCP Tool - references](#mcp-tool---references).
 - [ ] Migrate entities (JPA → Panache if full Quarkus strategy)
 - [ ] Migrate repositories (Spring Data → Panache if full Quarkus strategy)
 - [ ] **Validate persistence migration.** Read [references/mtools-mcp.md](../../references/mtools-mcp.md) for the MCP tool definition, then call `quarkit_validate` with `validator: "persistence"` and the `<source>` and `<target>` paths. You MUST attempt this call. If the tool is not available, log "mtools MCP not available, skipping automated persistence validation" and proceed. If reachable, address any `[FAIL]` items before moving to the next module.
 
+## MCP Tool - references
+
+Use the `quarkit_reference_lookup` MCP Tool with the parameters: 
+- map="annotation" AND 
+- (section="Dependency Injection" OR "Data / JPA")
+For each Java annotation listed, use the JSON record: `section/spring` to find a match within a Java `<source>` file and migrate it to its `<target>` file using the JSON record: `section/quarkus` according to the compatibility strategy: `SUPPORTED` vs `NOT_SUPPORTED`.
 
 ## Entity Layer (Full Quarkus strategy)
 
